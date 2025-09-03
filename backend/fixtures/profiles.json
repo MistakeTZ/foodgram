@@ -1,0 +1,42 @@
+[
+{
+  "model": "apiuser.profile",
+  "pk": 1,
+  "fields": {
+    "user": 1,
+    "avatar": null
+  }
+},
+{
+  "model": "apiuser.profile",
+  "pk": 2,
+  "fields": {
+    "user": 2,
+    "avatar": "images/avatars/user_4/50adba52-5394-4ed5-a032-5c25ac62ebd5.jpeg"
+  }
+},
+{
+  "model": "apiuser.profile",
+  "pk": 3,
+  "fields": {
+    "user": 3,
+    "avatar": "images/avatars/user_9/fe6312e4-7434-4a78-8afe-b664b3217a42.png"
+  }
+},
+{
+  "model": "apiuser.profile",
+  "pk": 4,
+  "fields": {
+    "user": 4,
+    "avatar": "images/avatars/user_10/b707cd03-d4c3-4d22-af16-88034c77d994.png"
+  }
+},
+{
+  "model": "apiuser.profile",
+  "pk": 5,
+  "fields": {
+    "user": 5,
+    "avatar": "images/avatars/user_11/414f5653-cbe6-41c2-8436-a2802a46e829.png"
+  }
+}
+]

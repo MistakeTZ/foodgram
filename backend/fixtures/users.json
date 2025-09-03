@@ -1,0 +1,92 @@
+[
+{
+  "model": "auth.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$bIyJS0PLmxAovjkWNKuPvj$eTtt7SULGeUvpI3sX/SFkNcGURJz9d22ncLxbN08oFk=",
+    "last_login": null,
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "Admin",
+    "last_name": "",
+    "email": "admin@gmail.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-09-01T10:49:47.905Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 2,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$yOhpX1B8B125kbUBR2Psqk$gRU5yQVAEnF2mQR3m8TySrLHJHqQe/zGyIpv9sEodQE=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "user",
+    "first_name": "Боря",
+    "last_name": "Допкин",
+    "email": "user@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-09-01T10:49:47.905Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 3,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$UM5LSDAFskPAopFrUUJAG5$o5BtxaWGTYSkC7D9GdaT/a2G/c/mR/rUH22oitulL6M=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "natalya_food",
+    "first_name": "Наталья",
+    "last_name": "Быкова",
+    "email": "natalya@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-09-02T06:25:58.502Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 4,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$Z2b0mt0lwbSExk4bxHvsnb$HWY64l0v+496Qte68w3h6cCVLkNw/M12KWpwrxhLrKg=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "chef_artem",
+    "first_name": "Шеф",
+    "last_name": "Артем",
+    "email": "chefartem@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-09-02T06:38:00.285Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "pk": 5,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$t51UiFbT499LKRUT7aaInf$GIyFoA/DOdldT38IfJTJ+S3a1ywideKgyKhBw2DPb5U=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "gramsay",
+    "first_name": "Gordon",
+    "last_name": "Ramsay",
+    "email": "ramsay@gmail.com",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2025-09-02T06:44:59.280Z",
+    "groups": [],
+    "user_permissions": []
+  }
+}
+]

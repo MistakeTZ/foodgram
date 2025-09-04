@@ -1,4 +1,10 @@
 version: '3.3'
+
+volumes:
+  static_volume:
+  media_volume:
+  postgres_data:
+
 services:
 
   frontend:
@@ -45,8 +51,3 @@ services:
       - ../docs/:/usr/share/nginx/html/api/docs/
       - static_volume:/app/staticfiles
       - media_volume:/app/media
-
-volumes:
-  static_volume:
-  media_volume:
-  postgres_data:

@@ -1,7 +1,8 @@
 from django.views.decorators.csrf import csrf_exempt
 from django.http.response import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
-from rest_framework.decorators import authentication_classes, permission_classes, api_view
+from rest_framework.decorators import (
+    authentication_classes, permission_classes, api_view)
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User
@@ -32,7 +33,7 @@ def login(request):
 
         if not valid:
             raise ValueError
-    except:
+    except ValueError:
         return JsonResponse({"error": "Invalid password"}, status=400)
 
     # Генерация токена
@@ -61,7 +62,9 @@ def set_password(request):
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
-        return JsonResponse({"field_name": ["Текущий пароль", "Новый пароль"]}, status=400)
+        return JsonResponse({
+            "field_name": ["Текущий пароль", "Новый пароль"]},
+            status=400)
 
     # Проверка пароля
     valid = user.check_password(data["current_password"])
@@ -86,5 +89,5 @@ def set_password(request):
         return HttpResponse(status=204)
     except ValueError as e:
         return JsonResponse({"field_name": [str(e)]}, status=400)
-    except:
+    except KeyError:
         return JsonResponse({"field_name": ["Новый пароль"]}, status=400)

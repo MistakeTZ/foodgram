@@ -1,7 +1,5 @@
-from django.shortcuts import render
 from django.http import JsonResponse
 from ..models.tag import Tag
-from ..models.recipe import Recipe
 from ..serializers import TagSerializer
 from django.views.decorators.http import require_GET
 

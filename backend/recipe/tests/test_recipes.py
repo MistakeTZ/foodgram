@@ -175,7 +175,8 @@ class TestRecipeViewFull:
     def test_patch_recipe_no_auth(self, api_client, recipe):
         url = reverse("recipe", args=[recipe.id])
         payload = {"name": "Обновлено", "text": "Текст",
-                   "cooking_time": 5, "image": None, "ingredients": [], "tags": []}
+                   "cooking_time": 5, "image": None,
+                   "ingredients": [], "tags": []}
         response = api_client.patch(url, data=json.dumps(
             payload), content_type="application/json")
         assert response.status_code == 401
@@ -185,7 +186,8 @@ class TestRecipeViewFull:
         auth_client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
         url = reverse("recipe", args=[recipe.id])
         payload = {"name": "Обновлено", "text": "Текст",
-                   "cooking_time": 5, "image": None, "ingredients": [], "tags": []}
+                   "cooking_time": 5, "image": None,
+                   "ingredients": [], "tags": []}
         response = auth_client.patch(url, data=json.dumps(
             payload), content_type="application/json")
         assert response.status_code == 403

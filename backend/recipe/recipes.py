@@ -22,7 +22,10 @@ def create_recipe(request):
     if isinstance(data, str):
         return JsonResponse({"field_name": [data]}, status=400)
     if not data["image"]:
-        return JsonResponse({"field_name": ["Отсутствует изображение"]}, status=400)
+        return JsonResponse(
+            {"field_name": ["Отсутствует изображение"]},
+            status=400
+        )
 
     try:
         # Создание рецепта
@@ -90,7 +93,8 @@ def get_recipes(request):
     paginator = RecipePagination()
     recipes = paginator.paginate_queryset(recipes, request)
 
-    return paginator.get_paginated_response(RecipeSerializer(recipes, many=True, context={"request": request}).data)
+    return paginator.get_paginated_response(RecipeSerializer(
+        recipes, many=True, context={"request": request}).data)
 
 
 # Изменение рецепта
@@ -120,7 +124,8 @@ def update_recipe(request, recipe):
             amount=item["amount"]
         )
 
-    return JsonResponse(RecipeSerializer(recipe, context={"request": request}).data)
+    return JsonResponse(RecipeSerializer(
+        recipe, context={"request": request}).data)
 
 
 # Проверка JSON

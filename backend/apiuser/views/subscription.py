@@ -2,7 +2,8 @@ from django.http.response import JsonResponse, HttpResponse
 from django.contrib.auth.models import User
 from ..models import Subscribtion
 from ..serializers import UserWithRecipesSerializer
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view, authentication_classes, permission_classes)
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from ..paginator import UsersPagination
@@ -26,11 +27,14 @@ def subscribe(request, author_id):
 
         # Валидация подписки
         if sub:
-            return JsonResponse({"error": "Подписка уже существует"}, status=400)
+            return JsonResponse({"error": "Подписка уже существует"},
+                                status=400)
         if author == request.user:
-            return JsonResponse({"error": "Нельзя подписаться на самого себя"}, status=400)
+            return JsonResponse({"error": "Нельзя подписаться на самого себя"
+                                 }, status=400)
         Subscribtion.objects.create(author=author, user=request.user)
-        return JsonResponse(UserWithRecipesSerializer(author, context={"request": request}).data, status=201)
+        return JsonResponse(UserWithRecipesSerializer(author,
+                            context={"request": request}).data, status=201)
 
     # Удаление подписки
     if request.method == "DELETE":

@@ -1,5 +1,9 @@
 from django.http.response import JsonResponse, HttpResponse
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes
+)
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.core.files.base import ContentFile
@@ -39,8 +43,9 @@ def avatar(request):
             profile.avatar.save(file_name, data, save=True)
 
             return JsonResponse({"avatar": profile.avatar.url})
-        except:
-            return JsonResponse({"field_name": ["Аватар не найден"]}, status=400)
+        except KeyError:
+            return JsonResponse(
+                {"field_name": ["Аватар не найден"]}, status=400)
 
     # Удаление аватара
     elif request.method == "DELETE":

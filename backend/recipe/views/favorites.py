@@ -1,4 +1,5 @@
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view, authentication_classes, permission_classes)
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from ..models.recipe import Recipe
@@ -22,7 +23,8 @@ def favorite(request, recipe_id):
     if request.method == "POST":
         fav = Favorite.objects.filter(user=request.user, recipe=recipe).first()
         if fav:
-            return JsonResponse({"error": "Рецепт уже в избранном"}, status=400)
+            return JsonResponse(
+                {"error": "Рецепт уже в избранном"}, status=400)
         Favorite.objects.create(user=request.user, recipe=recipe)
         return JsonResponse(ShortRecipeSerializer(recipe).data, status=201)
 

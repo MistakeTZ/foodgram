@@ -19,7 +19,9 @@ class UserSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, obj):
         if not self.context["request"].user.is_authenticated:
             return False
-        return Subscribtion.objects.filter(author=obj, user=self.context["request"].user).exists()
+        return Subscribtion.objects.filter(
+            author=obj,
+            user=self.context["request"].user).exists()
 
     def get_avatar(self, obj):
         if hasattr(obj, "profile") and obj.profile.avatar:

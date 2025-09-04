@@ -33,5 +33,6 @@ def ingredients(request):
 def ingredient(request, ingredient_id):
     ingredient = Ingredient.objects.filter(id=ingredient_id).first()
     if not ingredient:
-        return JsonResponse({"field_name": ["Ингредиент не найден"]}, status=400)
+        return JsonResponse(
+            {"field_name": ["Ингредиент не найден"]}, status=400)
     return JsonResponse(IngredientSingleSerializer(ingredient).data)

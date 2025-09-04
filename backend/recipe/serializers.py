@@ -19,19 +19,31 @@ class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         # Поля, которые возвращаются сериализатором
-        fields = ["id", "tags", "author", "ingredients", "is_favorited",
-                  "is_in_shopping_cart", "name", "image", "text", "cooking_time"]
+        fields = [
+            "id",
+            "tags",
+            "author",
+            "ingredients",
+            "is_favorited",
+            "is_in_shopping_cart",
+            "name",
+            "image",
+            "text",
+            "cooking_time"
+        ]
 
     # Поля, которые возвращаются сериализатором
     def get_is_favorited(self, obj):
         if not self.context["request"].user.is_authenticated:
             return False
-        return Favorite.objects.filter(user=self.context["request"].user, recipe=obj).exists()
+        return Favorite.objects.filter(
+            user=self.context["request"].user, recipe=obj).exists()
 
     def get_is_in_shopping_cart(self, obj):
         if not self.context["request"].user.is_authenticated:
             return False
-        return Cart.objects.filter(user=self.context["request"].user, recipe=obj).exists()
+        return Cart.objects.filter(
+            user=self.context["request"].user, recipe=obj).exists()
 
     def get_name(self, obj):
         return obj.title
@@ -46,10 +58,17 @@ class RecipeSerializer(serializers.ModelSerializer):
         return TagSerializer(obj.tags.all(), many=True).data
 
     def get_author(self, obj):
-        return UserSerializer(obj.author, context={"request": self.context["request"]}).data
+        return UserSerializer(
+            obj.author,
+            context={"request": self.context["request"]}
+        ).data
 
     def get_ingredients(self, obj):
-        return IngredientSerializer(obj.ingredients.all(), many=True, context={"recipe": obj}).data
+        return IngredientSerializer(
+            obj.ingredients.all(),
+            many=True,
+            context={"recipe": obj}
+        ).data
 
 
 # Сериализатор тега
@@ -68,7 +87,8 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "measurement_unit", "amount"]
 
     def get_amount(self, obj):
-        return RecipeIngredient.objects.get(ingredient=obj, recipe=self.context["recipe"]).amount
+        return RecipeIngredient.objects.get(
+            ingredient=obj, recipe=self.context["recipe"]).amount
 
 
 # Сериализатор ингредиента

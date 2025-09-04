@@ -1,5 +1,4 @@
 import pytest
-import json
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework.authtoken.models import Token
@@ -14,12 +13,14 @@ def api_client():
 
 @pytest.fixture
 def user(db):
-    return User.objects.create_user(username="user1", email="u1@example.com", password="Test1234")
+    return User.objects.create_user(
+        username="user1", email="u1@example.com", password="Test1234")
 
 
 @pytest.fixture
 def other_user(db):
-    return User.objects.create_user(username="user2", email="u2@example.com", password="Test1234")
+    return User.objects.create_user(
+        username="user2", email="u2@example.com", password="Test1234")
 
 
 @pytest.fixture
@@ -88,7 +89,8 @@ class TestSubscribtionsList:
         # создаём несколько подписок
         for i in range(12):
             u = User.objects.create_user(
-                username=f"user{i + 10}", email=f"u{i + 10}@ex.com", password="Test1234")
+                username=f"user{i + 10}", email=f"u{i + 10}@ex.com",
+                password="Test1234")
             Subscribtion.objects.create(user=user, author=u)
 
         url = reverse("subscribtions")

@@ -2,7 +2,8 @@ from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from .register import register_user
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view, authentication_classes, permission_classes)
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
@@ -40,7 +41,8 @@ def get_user(request, user_id):
     if not user:
         return JsonResponse({"detail": "User does not exist"}, status=404)
 
-    return JsonResponse(UserSerializer(user, context={"request": request}).data)
+    return JsonResponse(UserSerializer(
+        user, context={"request": request}).data)
 
 
 # Получение моего профиля

@@ -4,7 +4,7 @@ from ..serializers import RecipeSerializer
 from ..recipes import create_recipe, get_recipes, update_recipe
 from django.shortcuts import get_object_or_404
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 

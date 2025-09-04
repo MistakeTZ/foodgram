@@ -12,7 +12,8 @@ def api_client():
 
 @pytest.fixture
 def user(db):
-    return User.objects.create_user(username="user1", email="u1@example.com", password="Test1234")
+    return User.objects.create_user(
+        username="user1", email="u1@example.com", password="Test1234")
 
 
 @pytest.fixture
@@ -20,7 +21,8 @@ def other_users(db):
     users = []
     for i in range(15):
         users.append(User.objects.create_user(
-            username=f"user{i + 2}", email=f"user{i + 2}@ex.com", password="Test1234"))
+            username=f"user{i + 2}", email=f"user{i + 2}@ex.com",
+            password="Test1234"))
     return users
 
 

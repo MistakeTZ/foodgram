@@ -25,7 +25,7 @@ def register_user(request):
 
         if len(email) > 254:
             raise ValueError("Email слишком длинный")
-    except:
+    except ValueError or TypeError or KeyError:
         field_errors.append("Некорректный email")
 
     # Проверка username
@@ -37,7 +37,7 @@ def register_user(request):
             raise ValueError("Username некорректный")
         if len(username) > 150:
             raise ValueError("Username слишком длинный")
-    except:
+    except ValueError or TypeError or KeyError:
         field_errors.append("Некорректный username")
 
     # Проверка имени
@@ -46,7 +46,7 @@ def register_user(request):
 
         if len(first_name) > 150:
             raise ValueError("Имя слишком длинное")
-    except:
+    except ValueError or KeyError:
         field_errors.append("Некорректное имя")
 
     # Проверка фамилии
@@ -55,7 +55,7 @@ def register_user(request):
 
         if len(last_name) > 150:
             raise ValueError("Фамилия слишком длинная")
-    except:
+    except ValueError or KeyError:
         field_errors.append("Некорректная фамилия")
 
     # Проверка пароля
@@ -73,7 +73,7 @@ def register_user(request):
             raise ValueError("Пароль должен содержать цифру")
     except ValueError as e:
         field_errors.append(str(e))
-    except:
+    except TypeError:
         field_errors.append("Некорректный пароль")
 
     # Возврат ошибкок
@@ -99,5 +99,7 @@ def register_user(request):
         }
 
         return JsonResponse(data, status=201)
-    except Exception as e:
-        return JsonResponse({"field_name": ["Пользователь с таким email или username уже существует"]}, status=400)
+    except User.DoesNotExist:
+        return JsonResponse({"field_name": [
+            "Пользователь с таким email или username уже существует"]},
+            status=400)

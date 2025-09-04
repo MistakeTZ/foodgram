@@ -4,7 +4,8 @@ from .views import tags, recipes, ingredients, favorites, cart, link
 
 urlpatterns = [
     path('recipes/', recipes.RecipesView.as_view(), name='recipes'),
-    path('recipes/<int:recipe_id>/', recipes.RecipeView.as_view(), name='recipe'),
+    path('recipes/<int:recipe_id>/',
+         recipes.RecipeView.as_view(), name='recipe'),
     path('recipes/<int:recipe_id>/get-link/', link.get_link, name='get_link'),
 
     path('tags/', tags.tags, name='tags'),

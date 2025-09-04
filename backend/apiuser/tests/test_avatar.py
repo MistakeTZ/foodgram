@@ -9,7 +9,6 @@ from rest_framework.test import APIClient
 from rest_framework.authtoken.models import Token
 from apiuser.models import Profile
 from django.contrib.auth.models import User
-from uuid import uuid4
 
 
 @pytest.fixture

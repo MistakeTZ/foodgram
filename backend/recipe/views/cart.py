@@ -1,4 +1,5 @@
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view, authentication_classes, permission_classes)
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from ..models.recipe import Recipe, RecipeIngredient
@@ -29,7 +30,8 @@ def shopping_cart(request, recipe_id):
     if request.method == "POST":
         cart = Cart.objects.filter(user=request.user, recipe=recipe).first()
         if cart:
-            return JsonResponse({"error": "Рецепт уже в избранном"}, status=400)
+            return JsonResponse({"error": "Рецепт уже в избранном"},
+                                status=400)
         Cart.objects.create(user=request.user, recipe=recipe)
         return JsonResponse(ShortRecipeSerializer(recipe).data, status=201)
 
@@ -59,13 +61,14 @@ def download_shopping_cart(request):
     # Группировка ингредиентов
     cart_ingredients = {}
     for ing in ingredients:
-        ingredient = cart_ingredients.pop(ing.id,
-                                          {
-                                              "name": ing.ingredient.name,
-                                              "measurement_unit": ing.ingredient.measurement_unit,
-                                              "amount": 0
-                                          }
-                                          )
+        ingredient = cart_ingredients.pop(
+            ing.id,
+            {
+                "name": ing.ingredient.name,
+                "measurement_unit": ing.ingredient.measurement_unit,
+                "amount": 0
+            }
+        )
         ingredient["amount"] += ing.amount
 
         cart_ingredients[ing.id] = ingredient
@@ -99,10 +102,12 @@ def gen_pdf(ingredients):
     # Добавление ингредиентов
     for i, ing in enumerate(ingredients):
         if i == len(ingredients) - 1:
-            line = f"- {ing['name']}: {ing['amount']} {ing['measurement_unit']}."
+            line = f"- {ing['name']}: {ing['amount']
+                                       } {ing['measurement_unit']}."
             elements.append(Paragraph(line, style))
         else:
-            line = f"- {ing['name']}: {ing['amount']} {ing['measurement_unit']};"
+            line = f"- {ing['name']}: {ing['amount']
+                                       } {ing['measurement_unit']};"
             elements.append(Paragraph(line, style))
             elements.append(Spacer(1, 6))
 

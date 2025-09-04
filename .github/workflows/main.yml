@@ -59,11 +59,11 @@ jobs:
 
       - name: Run tests
         env:
-          DATABASE_HOST: ${{ job.services.postgres.host }}
-          DATABASE_PORT: ${{ job.services.postgres.ports[0] }}
-          DATABASE_NAME: foodgram
-          DATABASE_USER: foodgram_user
-          DATABASE_PASSWORD: foodgram_password
+          POSTGRES_HOST: ${{ job.services.postgres.hostname }}
+          POSTGRES_PORT: ${{ job.services.postgres.ports[0] }}
+          POSTGRES_DB: foodgram
+          POSTGRES_USER: foodgram_user
+          POSTGRES_PASSWORD: foodgram_password
         run: |
           cd backend
           pytest -v

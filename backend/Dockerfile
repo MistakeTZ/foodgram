@@ -1,8 +1,8 @@
 FROM python:3.12-slim
 
 # Set environment variables to optimize Python performance and Docker build
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -16,6 +16,7 @@ COPY . /app/
 
 # Expose the port your Django application will run on (e.g., 8000 for development server)
 EXPOSE 8000
+RUN chmod +x /app/entrypoint.sh
 
 # Используем entrypoint.sh для миграций и запуска
 ENTRYPOINT ["./entrypoint.sh"]

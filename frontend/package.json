@@ -39,5 +39,5 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://foodgram-back:8000/"
+  "proxy": "http://backend:8000/"
 }

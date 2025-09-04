@@ -74,14 +74,14 @@ def set_password(request):
     # Проверка нового пароля
     try:
         if len(data["new_password"]) > 128:
-            raise ValueError("Password is too long")
+            raise ValueError("Пароль слишком длинный")
         if len(data["new_password"]) < 8:
-            raise ValueError("Password is too short")
+            raise ValueError("Пароль слишком короткий")
         if not re.search("[a-z]", data["new_password"]):
             if not re.search("[A-Z]", data["new_password"]):
-                raise ValueError("Password must contain at least one letter")
+                raise ValueError("Пароль должен содержать хотя бы одну букву")
         if not re.search("[0-9]", data["new_password"]):
-            raise ValueError("Password must contain at least one number")
+            raise ValueError("Пароль должен содержать хотя бы одну цифру")
 
         # Изменение пароля
         user.set_password(data["new_password"])

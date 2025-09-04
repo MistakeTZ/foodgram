@@ -1,5 +1,6 @@
 from django.http.response import JsonResponse
 from django.contrib.auth.models import User
+from django.db import IntegrityError
 import re
 import json
 
@@ -99,7 +100,7 @@ def register_user(request):
         }
 
         return JsonResponse(data, status=201)
-    except User.DoesNotExist:
+    except IntegrityError:
         return JsonResponse({"field_name": [
             "Пользователь с таким email или username уже существует"]},
             status=400)

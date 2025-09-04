@@ -3,6 +3,11 @@ import json
 from django.urls import reverse
 from rest_framework.test import APIClient
 from django.contrib.auth.models import User
+import unicodedata
+
+
+def norm(s: str) -> str:
+    return unicodedata.normalize("NFC", s)
 
 
 @pytest.fixture
@@ -47,7 +52,7 @@ class TestRegisterUser:
         response = api_client.post(url, data=json.dumps(
             payload), content_type="application/json")
         assert response.status_code == 400
-        assert "email" in response.json()["field_name"]
+        assert "Некорректный email" in response.json()["field_name"]
 
     def test_register_invalid_username(self, api_client):
         url = reverse("users")
@@ -61,7 +66,7 @@ class TestRegisterUser:
         response = api_client.post(url, data=json.dumps(
             payload), content_type="application/json")
         assert response.status_code == 400
-        assert "username" in response.json()["field_name"]
+        assert "Некорректный username" in response.json()["field_name"]
 
     def test_register_short_password(self, api_client):
         url = reverse("users")
@@ -75,7 +80,8 @@ class TestRegisterUser:
         response = api_client.post(url, data=json.dumps(
             payload), content_type="application/json")
         assert response.status_code == 400
-        assert "Password is too short" in response.json()["field_name"][0]
+        assert norm("Пароль слишком короткий") in norm(
+            response.json()["field_name"][0])
 
     def test_register_no_letter_password(self, api_client):
         url = reverse("users")
@@ -89,7 +95,7 @@ class TestRegisterUser:
         response = api_client.post(url, data=json.dumps(
             payload), content_type="application/json")
         assert response.status_code == 400
-        assert "Password must contain at least one letter" in response.json()[
+        assert "Пароль должен содержать букву" in response.json()[
             "field_name"][0]
 
     def test_register_no_number_password(self, api_client):
@@ -104,7 +110,7 @@ class TestRegisterUser:
         response = api_client.post(url, data=json.dumps(
             payload), content_type="application/json")
         assert response.status_code == 400
-        assert "Password must contain at least one number" in response.json()[
+        assert "Пароль должен содержать цифру" in response.json()[
             "field_name"][0]
 
     def test_users_already_exists(self, api_client):
@@ -124,4 +130,5 @@ class TestRegisterUser:
         response = api_client.post(url, data=json.dumps(
             payload), content_type="application/json")
         assert response.status_code == 400
-        assert "User already exists" in response.json()["field_name"][0]
+        assert norm("Пользователь с таким email или username уже существует"
+                    ) in norm(response.json()["field_name"][0])

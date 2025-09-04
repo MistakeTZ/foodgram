@@ -1,7 +1,4 @@
 #!/bin/sh
-# Ожидание доступа к базе данных
-sleep 5
-
 # Выполняем миграции и загружаем фикстуры
 python manage.py migrate
 python manage.py collectstatic --no-input

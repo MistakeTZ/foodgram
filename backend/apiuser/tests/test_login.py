@@ -4,6 +4,11 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
+import unicodedata
+
+
+def norm(s: str) -> str:
+    return unicodedata.normalize("NFC", s)
 
 
 @pytest.fixture
@@ -87,15 +92,18 @@ class TestAuth:
         response = auth_client.post(url, data=json.dumps(
             payload), content_type="application/json")
         assert response.status_code == 400
-        assert "current_password" in response.json()["field_name"][0]
+        assert norm("Неверный пароль") in norm(
+            response.json()["field_name"][0])
 
     def test_set_password_invalid_json(self, auth_client):
         url = reverse("set_password")
         response = auth_client.post(
             url, data="not json", content_type="application/json")
         assert response.status_code == 400
-        assert "current_password" in response.json()["field_name"]
-        assert "new_password" in response.json()["field_name"]
+        assert norm("Текущий пароль") in [
+            norm(resp) for resp in response.json()["field_name"]]
+        assert norm("Новый пароль") in [
+            norm(resp) for resp in response.json()["field_name"]]
 
     def test_set_password_too_short(self, auth_client):
         url = reverse("set_password")
@@ -103,7 +111,8 @@ class TestAuth:
         response = auth_client.post(url, data=json.dumps(
             payload), content_type="application/json")
         assert response.status_code == 400
-        assert "Password is too short" in response.json()["field_name"][0]
+        assert norm("Пароль слишком короткий") in norm(
+            response.json()["field_name"][0])
 
     def test_set_password_no_number(self, auth_client):
         url = reverse("set_password")
@@ -112,8 +121,8 @@ class TestAuth:
         response = auth_client.post(url, data=json.dumps(
             payload), content_type="application/json")
         assert response.status_code == 400
-        assert "Password must contain at least one number" in response.json()[
-            "field_name"][0]
+        assert norm("Пароль должен содержать хотя бы одну цифру"
+                    ) in norm(response.json()["field_name"][0])
 
     def test_set_password_no_letter(self, auth_client):
         url = reverse("set_password")
@@ -121,8 +130,8 @@ class TestAuth:
         response = auth_client.post(url, data=json.dumps(
             payload), content_type="application/json")
         assert response.status_code == 400
-        assert "Password must contain at least one letter" in response.json()[
-            "field_name"][0]
+        assert norm("Пароль должен содержать хотя бы одну букву"
+                    ) in norm(response.json()["field_name"][0])
 
     def test_set_password_too_long(self, auth_client):
         url = reverse("set_password")
@@ -131,4 +140,5 @@ class TestAuth:
         response = auth_client.post(url, data=json.dumps(
             payload), content_type="application/json")
         assert response.status_code == 400
-        assert "Password is too long" in response.json()["field_name"][0]
+        assert norm("Пароль слишком длинный") in norm(
+            response.json()["field_name"][0])

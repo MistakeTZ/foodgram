@@ -16,19 +16,17 @@ from os import getenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+SECRET_KEY = getenv("DJANGO_SECRET_KEY", "fallback-secret-key")
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+DEBUG = getenv("DJANGO_DEBUG", "False") == "True"
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-1y62$f+q5465o84)ba!gp5op(f$=!qq0^hiey=#vd)v9&frwc8'
+ALLOWED_HOSTS = getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(
+    ","
+)
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ["*"]
-
-CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1']
+CSRF_TRUSTED_ORIGINS = getenv("DJANGO_CSRF_TRUSTED_HOSTS", "http://127.0.0.1,http://localhost").split(
+    ","
+)
 
 # Application definition
 

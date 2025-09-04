@@ -57,13 +57,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
+      - name: Wait for Postgres
+        run: |
+          until pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER; do
+            echo "Waiting for database..."
+            sleep 1
+          done
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: foodgram_user
+
       - name: Run tests
         env:
-          POSTGRES_HOST: ${{ job.services.postgres.hostname }}
-          POSTGRES_PORT: ${{ job.services.postgres.ports[0] }}
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
           POSTGRES_DB: foodgram
           POSTGRES_USER: foodgram_user
           POSTGRES_PASSWORD: foodgram_password
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
         run: |
           cd backend
           pytest -v

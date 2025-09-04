@@ -20,7 +20,7 @@ SECRET_KEY = getenv("DJANGO_SECRET_KEY", "fallback-secret-key")
 
 DEBUG = getenv("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(
+ALLOWED_HOSTS = getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,backend").split(
     ","
 )
 
@@ -101,8 +101,8 @@ else:
             "NAME": getenv("POSTGRES_DB", "foodgram"),
             "USER": getenv("POSTGRES_USER", "postgres"),
             "PASSWORD": getenv("POSTGRES_PASSWORD", "postgres"),
-            "HOST": getenv("POSTGRES_HOST", "db"),
-            "PORT": getenv("POSTGRES_PORT", "5432"),
+            "HOST": getenv("POSTGRES_HOST") or "db",
+            "PORT": getenv("POSTGRES_PORT") or "5432",
         }
     }
 

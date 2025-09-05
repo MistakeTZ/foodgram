@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework.exceptions import AuthenticationFailed
 
 
 # Работа с рецептами
@@ -16,9 +17,12 @@ class RecipesView(APIView):
     def get(self, request):
         # Аутенификация по токену
         auth = TokenAuthentication()
-        user_auth_tuple = auth.authenticate(request)
-        if user_auth_tuple:
-            request.user, request.auth = user_auth_tuple
+        try:
+            user_auth_tuple = auth.authenticate(request)
+            if user_auth_tuple:
+                request.user, request.auth = user_auth_tuple
+        except AuthenticationFailed:
+            pass
 
         # Получение списка рецептов
         return get_recipes(request)
@@ -67,8 +71,11 @@ class RecipeView(APIView):
     def _update_or_delete(self, request, recipe_id, method):
         # Получение токена
         auth = TokenAuthentication()
-        user_auth_tuple = auth.authenticate(request)
-        if not user_auth_tuple:
+        try:
+            user_auth_tuple = auth.authenticate(request)
+            if not user_auth_tuple:
+                raise AuthenticationFailed
+        except AuthenticationFailed:
             return JsonResponse({"error": "Invalid token"}, status=401)
 
         request.user, request.auth = user_auth_tuple

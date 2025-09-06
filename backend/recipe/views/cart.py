@@ -102,12 +102,14 @@ def gen_pdf(ingredients):
     # Добавление ингредиентов
     for i, ing in enumerate(ingredients):
         if i == len(ingredients) - 1:
-            line = f"- {ing['name']}: {ing['amount']
-                                       } {ing['measurement_unit']}."
+            line = (f"- {ing['name']}: {ing['amount']} "
+                    f"{ing['measurement_unit']}."
+                    )
             elements.append(Paragraph(line, style))
         else:
-            line = f"- {ing['name']}: {ing['amount']
-                                       } {ing['measurement_unit']};"
+            line = (f"- {ing['name']}: {ing['amount']} "
+                    f"{ing['measurement_unit']};"
+                    )
             elements.append(Paragraph(line, style))
             elements.append(Spacer(1, 6))
 

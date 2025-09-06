@@ -20,3 +20,5 @@ RUN chmod +x /app/entrypoint.sh
 
 # Используем entrypoint.sh для миграций и запуска
 ENTRYPOINT ["./entrypoint.sh"]
+
+CMD ["gunicorn", "app.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]

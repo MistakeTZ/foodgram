@@ -30,8 +30,9 @@ def subscribe(request, author_id):
             return JsonResponse({"error": "Подписка уже существует"},
                                 status=400)
         if author == request.user:
-            return JsonResponse({"error": "Нельзя подписаться на самого себя"
-                                 }, status=400)
+            return JsonResponse({
+                "error": "Нельзя подписаться на самого себя"
+            }, status=400)
         Subscribtion.objects.create(author=author, user=request.user)
         return JsonResponse(UserWithRecipesSerializer(author,
                             context={"request": request}).data, status=201)

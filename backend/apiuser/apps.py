@@ -7,4 +7,4 @@ class UserConfig(AppConfig):
     name = 'apiuser'
 
     def ready(self):
-        from . import signals
+        from . import signals  # noqa: F401

@@ -1,4 +1,5 @@
 import re
+from django.contrib.auth.hashers import make_password
 
 from rest_framework import serializers
 from users.models import Subscribtion, User
@@ -17,7 +18,9 @@ class UserPasswordUpdateSerializer(serializers.Serializer):
         return password_validation(value)
 
     def update(self, instance, validated_data):
-        instance.set_password(validated_data["new_password"])
+        instance.set_password(
+            make_password(validated_data["new_password"])
+        )
         instance.save(update_fields=["password"])
         return instance
 
@@ -55,6 +58,10 @@ class UserSerializer(serializers.ModelSerializer):
         return Subscribtion.objects.filter(
             author=obj, user=self.context["request"].user
         ).exists()
+
+    def create(self, validated_data):
+        validated_data["password"] = make_password(validated_data["password"])
+        return super().create(validated_data)
 
 
 def password_validation(value):

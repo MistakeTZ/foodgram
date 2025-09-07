@@ -33,12 +33,21 @@ class Recipe(models.Model):
 
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name="recipe_ingredients"
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="recipe_ingredients",
+        verbose_name="Рецепт",
     )
     ingredient = models.ForeignKey(
-        Ingredient, on_delete=models.CASCADE, related_name="recipe_ingredients"
+        Ingredient,
+        on_delete=models.CASCADE,
+        related_name="recipe_ingredients",
+        verbose_name="Ингредиент",
     )
-    amount = models.SmallIntegerField(validators=[MinValueValidator(1)])
+    amount = models.SmallIntegerField(
+        validators=[MinValueValidator(1)],
+        verbose_name="Количество",
+    )
 
     class Meta:
         verbose_name = "Ингредиент в рецепте"

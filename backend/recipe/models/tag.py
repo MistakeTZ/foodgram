@@ -6,12 +6,14 @@ from slugify import slugify
 class Tag(models.Model):
     name = models.CharField(
         max_length=settings.MAX_TAG_NAME_LENGTH,
-        unique=True
+        unique=True,
+        verbose_name="Название"
     )
     slug = models.SlugField(
         max_length=settings.MAX_TAG_SLUG_LENGTH,
         unique=True,
-        blank=True
+        blank=True,
+        verbose_name="Слаг"
     )
 
     class Meta:

@@ -8,4 +8,5 @@ from . import recipes  # noqa: F401
 from . import register  # noqa: F401
 from . import subscription  # noqa: F401
 from . import tags  # noqa: F401
+from . import user_reciepe_relation  # noqa: F401
 from . import users  # noqa: F401

@@ -1,11 +1,7 @@
 import io
 from datetime import datetime, timedelta, timezone
-from http import HTTPStatus
 from os import path
 
-from api.serializers.short_recipe import ShortRecipeSerializer
-from django.db.utils import IntegrityError
-from django.http import FileResponse, HttpResponse, JsonResponse
 from recipe.models.recipe import Recipe, RecipeIngredient
 from recipe.models.recipe_user_model import Cart
 from reportlab.lib.styles import getSampleStyleSheet
@@ -13,39 +9,19 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from rest_framework.decorators import api_view
+from api.serializers.user_recipe_serializer import CartSerializer
+from api.views.user_reciepe_relation import handle_user_recipe_relation
+from django.http import FileResponse
 
 
 @api_view(["POST", "DELETE"])
 def shopping_cart(request, recipe_id):
-    recipe = Recipe.objects.filter(id=recipe_id).first()
-
-    if not recipe:
-        return JsonResponse(
-            {"error": "Рецепт не найден"},
-            status=HTTPStatus.NOT_FOUND
-        )
-
-    if request.method == "POST":
-        try:
-            Cart.objects.create(user=request.user, recipe=recipe)
-        except IntegrityError:
-            return JsonResponse(
-                {"field_name": ["Рецепт уже в избранном"]},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-        return JsonResponse(
-            ShortRecipeSerializer(recipe).data, status=HTTPStatus.CREATED
-        )
-
-    if request.method == "DELETE":
-        is_deleted = Cart.objects.filter(
-            user=request.user, recipe=recipe).delete()
-        if not is_deleted[0]:
-            return JsonResponse(
-                {"error": "Рецепт не в избранном"},
-                status=HTTPStatus.BAD_REQUEST
-            )
-        return HttpResponse(status=HTTPStatus.NO_CONTENT)
+    return handle_user_recipe_relation(
+        request, recipe_id,
+        serializer_class=CartSerializer,
+        already_exists_msg="Рецепт уже в корзине",
+        not_in_relation_msg="Рецепт не в корзине"
+    )
 
 
 @api_view(["GET"])

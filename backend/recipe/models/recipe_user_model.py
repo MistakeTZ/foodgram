@@ -8,11 +8,13 @@ class UserRecipeRelation(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name="user_recipe_relation",
+        verbose_name="Пользователь",
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         related_name="user_recipe_relation",
+        verbose_name="Рецепт",
     )
 
     class Meta:
@@ -32,10 +34,14 @@ class Favorite(UserRecipeRelation):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="favorites"
+        related_name="favorites",
+        verbose_name="Пользователь",
     )
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name="in_favorites"
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="in_favorites",
+        verbose_name="Рецепт",
     )
 
     class Meta:
@@ -51,9 +57,17 @@ class Favorite(UserRecipeRelation):
 
 class Cart(UserRecipeRelation):
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="cart")
+        User,
+        on_delete=models.CASCADE,
+        related_name="cart",
+        verbose_name="Пользователь",
+    )
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name="in_carts")
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="in_carts",
+        verbose_name="Рецепт",
+    )
 
     class Meta:
         verbose_name = "Корзина"

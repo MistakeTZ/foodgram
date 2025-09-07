@@ -16,19 +16,38 @@ class User(AbstractUser):
         error_messages={
             "unique": _("Пользователь с таким именем уже существует."),
         },
+        verbose_name="Имя пользователя",
     )
     email = models.EmailField(
         _("email address"),
         unique=True,
         max_length=settings.MAX_EMAIL_LENGTH,
     )
-    first_name = models.CharField(max_length=settings.MAX_FIRST_NAME_LENGTH)
-    last_name = models.CharField(max_length=settings.MAX_LAST_NAME_LENGTH)
-    password = models.CharField(max_length=settings.MAX_PASSWORD_LENGTH)
-    avatar = models.ImageField(upload_to=user_avatar_path, blank=True)
+    first_name = models.CharField(
+        max_length=settings.MAX_FIRST_NAME_LENGTH,
+        verbose_name="Имя",
+    )
+    last_name = models.CharField(
+        max_length=settings.MAX_LAST_NAME_LENGTH,
+        verbose_name="Фамилия",
+    )
+    password = models.CharField(
+        max_length=settings.MAX_PASSWORD_LENGTH,
+        verbose_name="Пароль",
+    )
+    avatar = models.ImageField(
+        upload_to=user_avatar_path,
+        blank=True,
+        verbose_name="Аватар",
+    )
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username", "first_name", "last_name"]
+    REQUIRED_FIELDS = [
+        "username",
+        "first_name",
+        "last_name",
+        "password"
+    ]
 
     class Meta:
         verbose_name = "Пользователь"
@@ -42,12 +61,14 @@ class Subscribtion(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="follower"
+        related_name="follower",
+        verbose_name="Подписчик",
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="following"
+        related_name="following",
+        verbose_name="Автор",
     )
 
     class Meta:

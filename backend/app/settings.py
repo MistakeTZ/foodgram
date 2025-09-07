@@ -95,6 +95,16 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": getenv("POSTGRES_DB", "foodgram"),
+#         "USER": getenv("POSTGRES_USER", "postgres"),
+#         "PASSWORD": getenv("POSTGRES_PASSWORD", "postgres"),
+#         "HOST": getenv("POSTGRES_HOST") or "db",
+#         "PORT": getenv("POSTGRES_PORT") or "5432",
+#     }
+# }
 
 AUTH_USER_MODEL = "users.User"
 

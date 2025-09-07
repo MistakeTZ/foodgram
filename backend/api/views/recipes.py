@@ -54,6 +54,8 @@ class RecipeView(APIView):
     # Получение конкретного рецепта
     def get(self, request, recipe_id):
         recipe = self.get_object(recipe_id)
+        print(RecipeSerializer(recipe, context={"request": request}))
+        print(RecipeSerializer(recipe, context={"request": request}).data)
         return JsonResponse(
             RecipeSerializer(recipe, context={"request": request}).data
         )

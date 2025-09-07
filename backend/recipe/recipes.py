@@ -3,7 +3,7 @@ from recipe.models.recipe import Recipe, RecipeIngredient
 from recipe.models.recipe_user_model import Favorite
 from recipe.models.recipe_user_model import Cart
 from recipe.models.ingredient import Ingredient
-from recipe.paginator import RecipePagination
+from api.paginator import RecipePagination
 from api.serializers.recipe import RecipeSerializer
 from django.core.files.base import ContentFile
 from django.shortcuts import redirect
@@ -14,6 +14,7 @@ from http import HTTPStatus
 
 
 # Создание рецепта
+# TODO: убрать комментарии
 def create_recipe(request):
     # Проверка JSON
     data = check_fields(request.body)
@@ -32,8 +33,8 @@ def create_recipe(request):
         # Создание рецепта
         new_recipe = Recipe.objects.create(
             author=request.user,
-            title=data["name"],
-            description=data["text"],
+            name=data["name"],
+            text=data["text"],
             cooking_time=data["cooking_time"],
             image=data["image"]
         )
@@ -113,8 +114,8 @@ def update_recipe(request, recipe):
                             status=HTTPStatus.BAD_REQUEST)
 
     # Обновление рецепта
-    recipe.title = data["name"]
-    recipe.description = data["text"]
+    recipe.name = data["name"]
+    recipe.text = data["text"]
     recipe.cooking_time = data["cooking_time"]
     if data["image"]:
         recipe.image = data["image"]

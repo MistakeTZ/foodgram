@@ -20,8 +20,8 @@ class RecipeIngredientInline(admin.TabularInline):
 @admin.register(models.recipe.Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     inlines = [RecipeIngredientInline]
-    list_display = ('title', 'author', 'cooking_time', 'added_in_favorites')
-    search_fields = ('title', 'author__username', 'author__email')
+    list_display = ('name', 'author', 'cooking_time', 'added_in_favorites')
+    search_fields = ('name', 'author__username', 'author__email')
     list_filter = ('tags',)
 
     def added_in_favorites(self, obj):

@@ -13,9 +13,9 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         related_name='recipes'
     )
-    title = models.CharField(max_length=settings.MAX_RECIPE_TITLE_LENGTH)
+    name = models.CharField(max_length=settings.MAX_RECIPE_TITLE_LENGTH)
     image = models.ImageField(upload_to='images/recipes/')
-    description = models.TextField()
+    text = models.TextField()
     ingredients = models.ManyToManyField(
         Ingredient, through='RecipeIngredient')
     tags = models.ManyToManyField(Tag)
@@ -29,7 +29,7 @@ class Recipe(models.Model):
         verbose_name_plural = 'Рецепты'
 
     def __str__(self):
-        return self.title
+        return self.name
 
 
 # Модель ингредиента в рецепте

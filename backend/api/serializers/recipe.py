@@ -12,12 +12,11 @@ from api.serializers.ingredient import IngredientSerializer
 class RecipeSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    name = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
-    text = serializers.SerializerMethodField()
-    tags = serializers.SerializerMethodField()
+    tags = TagSerializer(many=True, read_only=True)
+    author = UserSerializer()
     ingredients = serializers.SerializerMethodField()
-    author = serializers.SerializerMethodField()
+    image = serializers.ImageField(use_url=True)
 
     class Meta:
         model = Recipe
@@ -47,24 +46,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             return False
         return Cart.objects.filter(
             user=self.context["request"].user, recipe=obj).exists()
-
-    def get_name(self, obj):
-        return obj.title
-
-    def get_image(self, obj):
-        return obj.image.url
-
-    def get_text(self, obj):
-        return obj.description
-
-    def get_tags(self, obj):
-        return TagSerializer(obj.tags.all(), many=True).data
-
-    def get_author(self, obj):
-        return UserSerializer(
-            obj.author,
-            context={"request": self.context["request"]}
-        ).data
 
     def get_ingredients(self, obj):
         return IngredientSerializer(

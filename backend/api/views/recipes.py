@@ -81,7 +81,10 @@ class RecipeView(APIView):
         request = auth_user(request)
 
         recipe = self.get_object(recipe_id, request)
-        return JsonResponse(RecipeSerializer(recipe, context={"request": request}).data)
+        return JsonResponse(RecipeSerializer(
+            recipe,
+            context={"request": request}
+        ).data)
 
     # Обновление конкретного рецепта
     def patch(self, request, recipe_id):

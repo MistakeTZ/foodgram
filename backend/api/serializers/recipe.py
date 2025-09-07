@@ -2,7 +2,6 @@ from api.serializers.ingredient import IngredientSerializer
 from api.serializers.short_recipe import ShortRecipeSerializer
 from api.serializers.tag import TagSerializer
 from recipe.models.recipe import Recipe
-from recipe.models.recipe_user_model import Cart, Favorite
 from rest_framework import serializers
 from users.serializers import UserSerializer
 

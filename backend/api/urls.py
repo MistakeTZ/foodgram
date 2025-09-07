@@ -16,7 +16,7 @@ urlpatterns = [
     ),
     path(
         "users/<int:author_id>/subscribe/",
-        views.subscription.subscribe,
+        views.subscription.SubscribeView.as_view(),
         name="subscribe",
     ),
     path("recipes/", views.recipes.RecipesView.as_view(), name="recipes"),

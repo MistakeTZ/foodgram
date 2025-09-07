@@ -18,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = getenv("DJANGO_SECRET_KEY", "fallback-secret-key")
 
-DEBUG = getenv("DJANGO_DEBUG", "True") == "True"
+DEBUG = getenv("DJANGO_DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,backend").split(
     ","
@@ -88,24 +88,16 @@ WSGI_APPLICATION = 'app.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-if DEBUG:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": getenv("POSTGRES_DB", "foodgram"),
+        "USER": getenv("POSTGRES_USER", "postgres"),
+        "PASSWORD": getenv("POSTGRES_PASSWORD", "postgres"),
+        "HOST": getenv("POSTGRES_HOST") or "db",
+        "PORT": getenv("POSTGRES_PORT") or "5432",
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": getenv("POSTGRES_DB", "foodgram"),
-            "USER": getenv("POSTGRES_USER", "postgres"),
-            "PASSWORD": getenv("POSTGRES_PASSWORD", "postgres"),
-            "HOST": getenv("POSTGRES_HOST") or "db",
-            "PORT": getenv("POSTGRES_PORT") or "5432",
-        }
-    }
+}
 
 AUTH_USER_MODEL = "users.User"
 

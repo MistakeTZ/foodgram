@@ -1,6 +1,6 @@
 from django.db import models
-from users.models import User
 from recipe.models.recipe import Recipe
+from users.models import User
 
 
 class UserRecipeRelation(models.Model):
@@ -30,9 +30,13 @@ class UserRecipeRelation(models.Model):
 
 class Favorite(UserRecipeRelation):
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='favorites')
+        User,
+        on_delete=models.CASCADE,
+        related_name="favorites"
+    )
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name='favorites')
+        Recipe, on_delete=models.CASCADE, related_name="favorites"
+    )
 
     class Meta:
         verbose_name = "Избранное"
@@ -47,9 +51,9 @@ class Favorite(UserRecipeRelation):
 
 class Cart(UserRecipeRelation):
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='carts')
+        User, on_delete=models.CASCADE, related_name="carts")
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name='carts')
+        Recipe, on_delete=models.CASCADE, related_name="carts")
 
     class Meta:
         verbose_name = "Корзина"

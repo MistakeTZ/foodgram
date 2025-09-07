@@ -1,5 +1,5 @@
-from rest_framework import serializers
 from recipe.models.recipe import Recipe
+from rest_framework import serializers
 
 
 # Сериализатор короткого рецепта

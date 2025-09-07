@@ -1,7 +1,7 @@
-from rest_framework import serializers
-from users.models import User
-from users.models import Subscribtion
 import re
+
+from rest_framework import serializers
+from users.models import Subscribtion, User
 
 
 class UserPasswordUpdateSerializer(serializers.Serializer):
@@ -30,8 +30,16 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         # Поля для сериализации
-        fields = ["email", "id", "username", "first_name",
-                  "last_name", "is_subscribed", "password", "avatar"]
+        fields = [
+            "email",
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "is_subscribed",
+            "password",
+            "avatar",
+        ]
 
     def validate_password(self, value):
         return password_validation(value)
@@ -48,8 +56,8 @@ class UserSerializer(serializers.ModelSerializer):
         if not self.context["request"].user.is_authenticated:
             return False
         return Subscribtion.objects.filter(
-            author=obj,
-            user=self.context["request"].user).exists()
+            author=obj, user=self.context["request"].user
+        ).exists()
 
     def get_avatar(self, obj):
         if obj.avatar:
@@ -64,8 +72,7 @@ def password_validation(value):
         raise serializers.ValidationError("Пароль слишком короткий")
     if not re.search("[a-z]", value):
         if not re.search("[A-Z]", value):
-            raise serializers.ValidationError(
-                "Пароль должен содержать букву")
+            raise serializers.ValidationError("Пароль должен содержать букву")
     if not re.search("[0-9]", value):
         raise serializers.ValidationError("Пароль должен содержать цифру")
     return value

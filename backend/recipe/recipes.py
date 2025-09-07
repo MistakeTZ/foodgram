@@ -1,16 +1,16 @@
-from django.http import JsonResponse
-from recipe.models.recipe import Recipe, RecipeIngredient
-from recipe.models.recipe_user_model import Favorite
-from recipe.models.recipe_user_model import Cart
-from recipe.models.ingredient import Ingredient
+import base64
+import json
+from http import HTTPStatus
+from uuid import uuid4
+
 from api.paginator import RecipePagination
 from api.serializers.recipe import RecipeSerializer
 from django.core.files.base import ContentFile
+from django.http import JsonResponse
 from django.shortcuts import redirect
-import json
-import base64
-from uuid import uuid4
-from http import HTTPStatus
+from recipe.models.ingredient import Ingredient
+from recipe.models.recipe import Recipe, RecipeIngredient
+from recipe.models.recipe_user_model import Cart, Favorite
 
 
 # Создание рецепта
@@ -21,8 +21,10 @@ def create_recipe(request):
 
     # Если проверка не прошла или отсутствует изображение
     if isinstance(data, str):
-        return JsonResponse({"field_name": [data]},
-                            status=HTTPStatus.BAD_REQUEST)
+        return JsonResponse(
+            {"field_name": [data]},
+            status=HTTPStatus.BAD_REQUEST
+        )
     if not data["image"]:
         return JsonResponse(
             {"field_name": ["Отсутствует изображение"]},
@@ -36,7 +38,7 @@ def create_recipe(request):
             name=data["name"],
             text=data["text"],
             cooking_time=data["cooking_time"],
-            image=data["image"]
+            image=data["image"],
         )
 
         # Добавление ингредиентов и тегов
@@ -44,25 +46,25 @@ def create_recipe(request):
         for item in data["ingredients"]:
             ingredient = Ingredient.objects.get(id=item["id"])
             RecipeIngredient.objects.create(
-                recipe=new_recipe,
-                ingredient=ingredient,
-                amount=item["amount"]
+                recipe=new_recipe, ingredient=ingredient, amount=item["amount"]
             )
         new_recipe.save()
 
         return redirect("recipe", new_recipe.id)
     except Exception as e:
-        return JsonResponse({"field_name": [str(e)]},
-                            status=HTTPStatus.BAD_REQUEST)
+        return JsonResponse(
+            {"field_name": [str(e)]},
+            status=HTTPStatus.BAD_REQUEST
+        )
 
 
 # Получение рецептов
 def get_recipes(request):
     # Параметры
-    is_favorited = int(request.GET.get('is_favorited', 0))
-    is_in_shopping_cart = int(request.GET.get('is_in_shopping_cart', 0))
-    author = request.GET.get('author')
-    tags = request.GET.getlist('tags')
+    is_favorited = int(request.GET.get("is_favorited", 0))
+    is_in_shopping_cart = int(request.GET.get("is_in_shopping_cart", 0))
+    author = request.GET.get("author")
+    tags = request.GET.getlist("tags")
 
     # Получение рецептов
     recipes = Recipe.objects.all()
@@ -76,33 +78,38 @@ def get_recipes(request):
     # Фильтрация по избранному и в корзине
     if is_favorited:
         if not request.user.is_authenticated:
-            return JsonResponse({"error": "Вы не авторизованы"},
-                                status=HTTPStatus.UNAUTHORIZED)
+            return JsonResponse(
+                {"error": "Вы не авторизованы"}, status=HTTPStatus.UNAUTHORIZED
+            )
 
-        favorites = Favorite.objects.filter(
-            user=request.user).values_list("recipe_id", flat=True)
+        favorites = Favorite.objects.filter(user=request.user).values_list(
+            "recipe_id", flat=True
+        )
         recipes = recipes.filter(id__in=favorites)
     if is_in_shopping_cart:
         if not request.user.is_authenticated:
-            return JsonResponse({"error": "Вы не авторизованы"},
-                                status=HTTPStatus.UNAUTHORIZED)
+            return JsonResponse(
+                {"error": "Вы не авторизованы"}, status=HTTPStatus.UNAUTHORIZED
+            )
 
-        cart = Cart.objects.filter(
-            user=request.user).values_list("recipe_id", flat=True)
+        cart = Cart.objects.filter(user=request.user).values_list(
+            "recipe_id", flat=True
+        )
         recipes = recipes.filter(id__in=cart)
 
     # Сортировка
-    recipes = recipes.order_by('-id')
+    recipes = recipes.order_by("-id")
 
     # Пагинация
     paginator = RecipePagination()
-    if request.GET.get('limit'):
-        paginator.page_size = request.GET.get('limit')
+    if request.GET.get("limit"):
+        paginator.page_size = request.GET.get("limit")
 
     recipes = paginator.paginate_queryset(recipes, request)
 
-    return paginator.get_paginated_response(RecipeSerializer(
-        recipes, many=True, context={"request": request}).data)
+    return paginator.get_paginated_response(
+        RecipeSerializer(recipes, many=True, context={"request": request}).data
+    )
 
 
 # Изменение рецепта
@@ -110,8 +117,10 @@ def update_recipe(request, recipe):
     # Проверка JSON
     data = check_fields(request.body)
     if isinstance(data, str):
-        return JsonResponse({"field_name": [data]},
-                            status=HTTPStatus.BAD_REQUEST)
+        return JsonResponse(
+            {"field_name": [data]},
+            status=HTTPStatus.BAD_REQUEST
+        )
 
     # Обновление рецепта
     recipe.name = data["name"]
@@ -128,16 +137,17 @@ def update_recipe(request, recipe):
         for item in data["ingredients"]:
             ingredient = Ingredient.objects.get(id=item["id"])
             RecipeIngredient.objects.create(
-                recipe=recipe,
-                ingredient=ingredient,
-                amount=item["amount"]
+                recipe=recipe, ingredient=ingredient, amount=item["amount"]
             )
 
         return JsonResponse(RecipeSerializer(
-            recipe, context={"request": request}).data)
+            recipe, context={"request": request}
+        ).data)
     except Exception as e:
-        return JsonResponse({"field_name": [str(e)]},
-                            status=HTTPStatus.BAD_REQUEST)
+        return JsonResponse(
+            {"field_name": [str(e)]},
+            status=HTTPStatus.BAD_REQUEST
+        )
 
 
 # Проверка JSON
@@ -170,8 +180,8 @@ def check_fields(body):
         image = data.get("image")
 
         if image:
-            format, imgstr = image.split(';base64,')
-            ext = format.split('/')[-1]
+            format, imgstr = image.split(";base64,")
+            ext = format.split("/")[-1]
             file_name = f"{uuid4()}.{ext}"
             content = ContentFile(base64.b64decode(imgstr), name=file_name)
         else:
@@ -196,5 +206,5 @@ def check_fields(body):
         "cooking_time": cooking_time,
         "image": content,
         "ingredients": ingredients,
-        "tags": tags
+        "tags": tags,
     }

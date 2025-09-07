@@ -1,17 +1,18 @@
-from rest_framework.decorators import api_view
+import io
+from datetime import datetime, timedelta, timezone
+from http import HTTPStatus
+from os import path
+
+from api.serializers.short_recipe import ShortRecipeSerializer
+from django.db.utils import IntegrityError
+from django.http import FileResponse, HttpResponse, JsonResponse
 from recipe.models.recipe import Recipe, RecipeIngredient
 from recipe.models.recipe_user_model import Cart
-from api.serializers.short_recipe import ShortRecipeSerializer
-from django.http import JsonResponse, HttpResponse, FileResponse
-from django.db.utils import IntegrityError
-from datetime import datetime, timezone, timedelta
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.styles import getSampleStyleSheet
-import io
-from os import path
-from http import HTTPStatus
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+from rest_framework.decorators import api_view
 
 
 # Изменение списка покупок
@@ -21,26 +22,33 @@ def shopping_cart(request, recipe_id):
 
     # Проверка существования рецепта
     if not recipe:
-        return JsonResponse({"error": "Рецепт не найден"},
-                            status=HTTPStatus.NOT_FOUND)
+        return JsonResponse(
+            {"error": "Рецепт не найден"},
+            status=HTTPStatus.NOT_FOUND
+        )
 
     # Добавление рецепта в список
     if request.method == "POST":
         try:
             Cart.objects.create(user=request.user, recipe=recipe)
         except IntegrityError:
-            return JsonResponse({"field_name": ["Рецепт уже в избранном"]},
-                                status=HTTPStatus.BAD_REQUEST)
-        return JsonResponse(ShortRecipeSerializer(recipe).data,
-                            status=HTTPStatus.CREATED)
+            return JsonResponse(
+                {"field_name": ["Рецепт уже в избранном"]},
+                status=HTTPStatus.BAD_REQUEST,
+            )
+        return JsonResponse(
+            ShortRecipeSerializer(recipe).data, status=HTTPStatus.CREATED
+        )
 
     # Удаление рецепта из списка
     if request.method == "DELETE":
         is_deleted = Cart.objects.filter(
             user=request.user, recipe=recipe).delete()
         if not is_deleted[0]:
-            return JsonResponse({"error": "Рецепт не в избранном"},
-                                status=HTTPStatus.BAD_REQUEST)
+            return JsonResponse(
+                {"error": "Рецепт не в избранном"},
+                status=HTTPStatus.BAD_REQUEST
+            )
         return HttpResponse(status=HTTPStatus.NO_CONTENT)
 
 
@@ -52,10 +60,10 @@ def download_shopping_cart(request):
         user=request.user).values_list("recipe_id", flat=True)
     # TODO: Создавать объект нужно через сохранение сериалайзера,
     # а не подобным образом вручную
-    ingredients = (
-        RecipeIngredient.objects
-        .filter(recipe_id__in=cart)
-        .select_related("ingredient", "recipe")
+    ingredients = RecipeIngredient.objects.filter(
+        recipe_id__in=cart
+    ).select_related(
+        "ingredient", "recipe"
     )
 
     # Группировка ингредиентов
@@ -66,8 +74,8 @@ def download_shopping_cart(request):
             {
                 "name": ingredient.ingredient.name,
                 "measurement_unit": ingredient.ingredient.measurement_unit,
-                "amount": 0
-            }
+                "amount": 0,
+            },
         )
         ingredient["amount"] += ingredient.amount
 
@@ -102,14 +110,16 @@ def gen_pdf(ingredients):
     # Добавление ингредиентов
     for i, ingredient in enumerate(ingredients):
         if i == len(ingredients) - 1:
-            line = (f"- {ingredient['name']}: {ingredient['amount']} "
-                    f"{ingredient['measurement_unit']}."
-                    )
+            line = (
+                f"- {ingredient['name']}: {ingredient['amount']} "
+                f"{ingredient['measurement_unit']}."
+            )
             elements.append(Paragraph(line, style))
         else:
-            line = (f"- {ingredient['name']}: {ingredient['amount']} "
-                    f"{ingredient['measurement_unit']};"
-                    )
+            line = (
+                f"- {ingredient['name']}: {ingredient['amount']} "
+                f"{ingredient['measurement_unit']};"
+            )
             elements.append(Paragraph(line, style))
             elements.append(Spacer(1, 6))
 

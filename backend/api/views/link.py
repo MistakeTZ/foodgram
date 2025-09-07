@@ -1,9 +1,10 @@
+from http import HTTPStatus
+
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from recipe.models.recipe import Recipe
 from django.shortcuts import redirect
 from django.urls import reverse
-from http import HTTPStatus
+from django.views.decorators.csrf import csrf_exempt
+from recipe.models.recipe import Recipe
 
 
 # Получение рецепта по короткой ссылке
@@ -19,11 +20,15 @@ def get_link(request, recipe_id):
     recipe = Recipe.objects.filter(id=recipe_id).first()
 
     if not recipe:
-        return JsonResponse({"detail": "Recipe not found"},
-                            status=HTTPStatus.NOT_FOUND)
+        return JsonResponse(
+            {"detail": "Recipe not found"},
+            status=HTTPStatus.NOT_FOUND
+        )
 
     # Генерация короткой ссылки
     link = hex(recipe.id)
-    return JsonResponse({"short-link": request.build_absolute_uri(
-        reverse("short_link", args=[link]
-                ))}, status=HTTPStatus.OK)
+    return JsonResponse(
+        {"short-link": request.build_absolute_uri(
+            reverse("short_link", args=[link]))},
+        status=200,
+    )

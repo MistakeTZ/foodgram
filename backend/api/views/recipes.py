@@ -1,14 +1,15 @@
-from django.http import JsonResponse, HttpResponse
-from recipe.models.recipe import Recipe
-from api.serializers.recipe import RecipeSerializer
-from recipe.recipes import create_recipe, get_recipes, update_recipe
-from django.shortcuts import get_object_or_404
-from users.auth import auth_user
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.views import APIView
-from rest_framework.exceptions import AuthenticationFailed
 from http import HTTPStatus
+
+from api.serializers.recipe import RecipeSerializer
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404
+from recipe.models.recipe import Recipe
+from recipe.recipes import create_recipe, get_recipes, update_recipe
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.views import APIView
+from users.auth import auth_user
 
 
 # Работа с рецептами
@@ -29,14 +30,16 @@ class RecipesView(APIView):
         auth = TokenAuthentication()
         user_auth_tuple = auth.authenticate(request)
         if not user_auth_tuple:
-            return JsonResponse({"error": "Invalid token"},
-                                status=HTTPStatus.UNAUTHORIZED)
+            return JsonResponse(
+                {"error": "Invalid token"}, status=HTTPStatus.UNAUTHORIZED
+            )
         request.user, request.auth = user_auth_tuple
 
         # Проверка разрешения
         if not IsAuthenticated().has_permission(request, self):
-            return JsonResponse({"error": "Permission denied"},
-                                status=HTTPStatus.UNAUTHORIZED)
+            return JsonResponse(
+                {"error": "Permission denied"}, status=HTTPStatus.UNAUTHORIZED
+            )
 
         # Создание рецепта
         return create_recipe(request)
@@ -56,9 +59,9 @@ class RecipeView(APIView):
         recipe = self.get_object(recipe_id)
         print(RecipeSerializer(recipe, context={"request": request}))
         print(RecipeSerializer(recipe, context={"request": request}).data)
-        return JsonResponse(
-            RecipeSerializer(recipe, context={"request": request}).data
-        )
+        return JsonResponse(RecipeSerializer(
+            recipe, context={"request": request}
+        ).data)
 
     # Обновление конкретного рецепта
     def patch(self, request, recipe_id):
@@ -77,21 +80,25 @@ class RecipeView(APIView):
             if not user_auth_tuple:
                 raise AuthenticationFailed
         except AuthenticationFailed:
-            return JsonResponse({"error": "Invalid token"},
-                                status=HTTPStatus.UNAUTHORIZED)
+            return JsonResponse(
+                {"error": "Invalid token"}, status=HTTPStatus.UNAUTHORIZED
+            )
 
         request.user, request.auth = user_auth_tuple
 
         # Проверка авторизации
         if not IsAuthenticated().has_permission(request, self):
-            return JsonResponse({"error": "Permission denied"},
-                                status=HTTPStatus.UNAUTHORIZED)
+            return JsonResponse(
+                {"error": "Permission denied"}, status=HTTPStatus.UNAUTHORIZED
+            )
 
         # Проверка владельца
         recipe = self.get_object(recipe_id)
         if recipe.author != request.user:
-            return JsonResponse({"error": "No permission"},
-                                status=HTTPStatus.FORBIDDEN)
+            return JsonResponse(
+                {"error": "No permission"},
+                status=HTTPStatus.FORBIDDEN
+            )
 
         # Обновление или удаление
         if method == "DELETE":

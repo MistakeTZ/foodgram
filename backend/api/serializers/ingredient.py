@@ -1,6 +1,6 @@
-from rest_framework import serializers
 from recipe.models.ingredient import Ingredient
 from recipe.models.recipe import RecipeIngredient
+from rest_framework import serializers
 
 
 # Сериализатор ингредиента
@@ -13,7 +13,8 @@ class IngredientSerializer(serializers.ModelSerializer):
 
     def get_amount(self, obj):
         return RecipeIngredient.objects.get(
-            ingredient=obj, recipe=self.context["recipe"]).amount
+            ingredient=obj, recipe=self.context["recipe"]
+        ).amount
 
 
 # Сериализатор ингредиента

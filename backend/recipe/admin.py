@@ -8,7 +8,7 @@ admin.site.register(models.tag.Tag)
 # Регистрация ингредиента
 @admin.register(models.ingredient.Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
-    search_fields = ('name',)
+    search_fields = ("name",)
 
 
 # Регистрация рецепта
@@ -20,13 +20,14 @@ class RecipeIngredientInline(admin.TabularInline):
 @admin.register(models.recipe.Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     inlines = [RecipeIngredientInline]
-    list_display = ('name', 'author', 'cooking_time', 'added_in_favorites')
-    search_fields = ('name', 'author__username', 'author__email')
-    list_filter = ('tags',)
+    list_display = ("name", "author", "cooking_time", "added_in_favorites")
+    search_fields = ("name", "author__username", "author__email")
+    list_filter = ("tags",)
 
     def added_in_favorites(self, obj):
         count = models.recipe_user_model.Favorite.objects.filter(
-            recipe=obj).count()
+            recipe=obj
+        ).count()
         return count
 
 

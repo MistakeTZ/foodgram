@@ -1,5 +1,5 @@
-from rest_framework import serializers
 from recipe.models.tag import Tag
+from rest_framework import serializers
 
 
 # Сериализатор тега

@@ -1,11 +1,10 @@
-from rest_framework import serializers
-from recipe.models.recipe import Recipe
-from recipe.models.recipe_user_model import Favorite
-from recipe.models.recipe_user_model import Cart
-from api.serializers.short_recipe import ShortRecipeSerializer
-from users.serializers import UserSerializer
-from api.serializers.tag import TagSerializer
 from api.serializers.ingredient import IngredientSerializer
+from api.serializers.short_recipe import ShortRecipeSerializer
+from api.serializers.tag import TagSerializer
+from recipe.models.recipe import Recipe
+from recipe.models.recipe_user_model import Cart, Favorite
+from rest_framework import serializers
+from users.serializers import UserSerializer
 
 
 # Сериализатор рецепта
@@ -31,7 +30,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             "name",
             "image",
             "text",
-            "cooking_time"
+            "cooking_time",
         ]
 
     # Поля, которые возвращаются сериализатором
@@ -39,19 +38,19 @@ class RecipeSerializer(serializers.ModelSerializer):
         if not self.context["request"].user.is_authenticated:
             return False
         return Favorite.objects.filter(
-            user=self.context["request"].user, recipe=obj).exists()
+            user=self.context["request"].user, recipe=obj
+        ).exists()
 
     def get_is_in_shopping_cart(self, obj):
         if not self.context["request"].user.is_authenticated:
             return False
         return Cart.objects.filter(
-            user=self.context["request"].user, recipe=obj).exists()
+            user=self.context["request"].user, recipe=obj
+        ).exists()
 
     def get_ingredients(self, obj):
         return IngredientSerializer(
-            obj.ingredients.all(),
-            many=True,
-            context={"recipe": obj}
+            obj.ingredients.all(), many=True, context={"recipe": obj}
         ).data
 
 

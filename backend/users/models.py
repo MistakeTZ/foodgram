@@ -1,7 +1,7 @@
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.conf import settings
 
 
 def user_avatar_path(instance, filename):
@@ -31,8 +31,8 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ["username", "first_name", "last_name"]
 
     class Meta:
-        verbose_name = 'Пользователь'
-        verbose_name_plural = 'Пользователи'
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
 
     def __str__(self):
         return self.email
@@ -43,23 +43,22 @@ class Subscribtion(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='follower'
+        related_name="follower"
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='following'
+        related_name="following"
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['user', 'author'],
-                name='unique_subscription'
+                fields=["user", "author"], name="unique_subscription"
             )
         ]
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
 
     def __str__(self):
-        return f'{self.user} → {self.author}'
+        return f"{self.user} → {self.author}"

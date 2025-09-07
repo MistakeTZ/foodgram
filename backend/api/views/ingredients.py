@@ -1,9 +1,10 @@
-from django.db.models import Q, Case, When, Value, IntegerField
-from django.http import JsonResponse
-from recipe.models.ingredient import Ingredient
-from api.serializers.ingredient import IngredientSingleSerializer
-from django.views.decorators.http import require_GET
 from http import HTTPStatus
+
+from api.serializers.ingredient import IngredientSingleSerializer
+from django.db.models import Case, IntegerField, Q, Value, When
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from recipe.models.ingredient import Ingredient
 
 
 # Получение списка ингредиентов
@@ -13,13 +14,17 @@ def ingredients(request):
 
     # Проверка ввода
     if name:
-        ingredient_list = Ingredient.objects.annotate(
-            starts_with_name=Case(
-                When(name__istartswith=name, then=Value(0)),
-                default=Value(1),
-                output_field=IntegerField()
+        ingredient_list = (
+            Ingredient.objects.annotate(
+                starts_with_name=Case(
+                    When(name__istartswith=name, then=Value(0)),
+                    default=Value(1),
+                    output_field=IntegerField(),
+                )
             )
-        ).filter(Q(name__icontains=name)).order_by('starts_with_name', 'name')
+            .filter(Q(name__icontains=name))
+            .order_by("starts_with_name", "name")
+        )
     else:
         ingredient_list = Ingredient.objects.all()
 
@@ -36,5 +41,6 @@ def ingredient(request, ingredient_id):
     if not ingredient:
         return JsonResponse(
             {"field_name": ["Ингредиент не найден"]},
-            status=HTTPStatus.BAD_REQUEST)
+            status=HTTPStatus.BAD_REQUEST
+        )
     return JsonResponse(IngredientSingleSerializer(ingredient).data)

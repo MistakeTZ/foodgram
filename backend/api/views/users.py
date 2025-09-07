@@ -1,13 +1,14 @@
-from django.http.response import JsonResponse
-from users.models import User
-from api.views.register import register_user
-from rest_framework.permissions import AllowAny
-from rest_framework.generics import ListAPIView
-from rest_framework.views import APIView
-from users.serializers import UserSerializer
-from api.paginator import UsersPagination
-from users.auth import auth_user
 from http import HTTPStatus
+
+from api.paginator import UsersPagination
+from api.views.register import register_user
+from django.http.response import JsonResponse
+from rest_framework.generics import ListAPIView
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
+from users.auth import auth_user
+from users.models import User
+from users.serializers import UserSerializer
 
 
 # Обработка запроса /users/
@@ -26,7 +27,8 @@ class UserListView(ListAPIView):
         # Пагинация
         result_page = paginator.paginate_queryset(queryset, request)
         serializer = UserSerializer(
-            result_page, many=True, context={"request": request})
+            result_page, many=True, context={"request": request}
+        )
         return paginator.get_paginated_response(serializer.data)
 
     # Создание пользователя
@@ -46,16 +48,19 @@ class UserView(APIView):
         user = User.objects.filter(id=user_id).first()
 
         if not user:
-            return JsonResponse({"detail": "User does not exist"},
-                                status=HTTPStatus.NOT_FOUND)
+            return JsonResponse(
+                {"detail": "User does not exist"}, status=HTTPStatus.NOT_FOUND
+            )
 
         return JsonResponse(UserSerializer(
-            user, context={"request": request}).data)
+            user, context={"request": request}
+        ).data)
 
 
 # Получение моего профиля
 class MeView(APIView):
     def get(self, request):
         print(request.user)
-        return JsonResponse(UserSerializer(
-            request.user, context={"request": request}).data)
+        return JsonResponse(
+            UserSerializer(request.user, context={"request": request}).data
+        )

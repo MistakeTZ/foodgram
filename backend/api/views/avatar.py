@@ -1,10 +1,11 @@
-from django.http.response import JsonResponse, HttpResponse
-from http import HTTPStatus
-from rest_framework.decorators import api_view
-from django.core.files.base import ContentFile
-import json
 import base64
+import json
+from http import HTTPStatus
 from uuid import uuid4
+
+from django.core.files.base import ContentFile
+from django.http.response import HttpResponse, JsonResponse
+from rest_framework.decorators import api_view
 
 
 # Изменение аватара
@@ -18,14 +19,15 @@ def avatar(request):
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
-            return JsonResponse({"field_name": ["Invalid JSON"]},
-                                status=HTTPStatus.BAD_REQUEST)
+            return JsonResponse(
+                {"field_name": ["Invalid JSON"]}, status=HTTPStatus.BAD_REQUEST
+            )
 
         try:
             # Получение изображения
             image = data["avatar"]
-            format, imgstr = image.split(';base64,')
-            ext = format.split('/')[-1]
+            format, imgstr = image.split(";base64,")
+            ext = format.split("/")[-1]
             file_name = f"{uuid4()}.{ext}"
 
             # Сохранение изображения
@@ -36,7 +38,8 @@ def avatar(request):
         except KeyError:
             return JsonResponse(
                 {"field_name": ["Аватар не найден"]},
-                status=HTTPStatus.BAD_REQUEST)
+                status=HTTPStatus.BAD_REQUEST
+            )
 
     # Удаление аватара
     elif request.method == "DELETE":

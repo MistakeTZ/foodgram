@@ -44,7 +44,7 @@ class RecipeIngredient(models.Model):
         on_delete=models.CASCADE,
         related_name='recipe_ingredients'
     )
-    amount = models.SmallAutoField(validators=[MinValueValidator(1)])
+    amount = models.SmallIntegerField(validators=[MinValueValidator(1)])
 
     class Meta:
         verbose_name = 'Ингредиент в рецепте'

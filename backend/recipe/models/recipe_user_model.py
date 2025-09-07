@@ -17,6 +17,12 @@ class UserRecipeRelation(models.Model):
 
     class Meta:
         abstract = True
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "recipe"],
+                name="unique_user_recipe_relation",
+            )
+        ]
 
     def __str__(self):
         return f"{self.user.username} → {self.recipe.title}"
@@ -31,6 +37,12 @@ class Favorite(UserRecipeRelation):
     class Meta:
         verbose_name = "Избранное"
         verbose_name_plural = "Избранные рецепты"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "recipe"],
+                name="unique_favorite_relation",
+            )
+        ]
 
 
 class Cart(UserRecipeRelation):
@@ -42,3 +54,9 @@ class Cart(UserRecipeRelation):
     class Meta:
         verbose_name = "Корзина"
         verbose_name_plural = "Список покупок"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "recipe"],
+                name="unique_cart_relation",
+            )
+        ]

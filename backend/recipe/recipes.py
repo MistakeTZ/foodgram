@@ -7,7 +7,6 @@ from recipe.paginator import RecipePagination
 from api.serializers.recipe import RecipeSerializer
 from django.core.files.base import ContentFile
 from django.shortcuts import redirect
-from recipe import validators
 import json
 import base64
 from uuid import uuid4
@@ -116,19 +115,21 @@ def update_recipe(request, recipe):
     recipe.save()
 
     # Обновление ингредиентов и тегов
-    recipe.tags.clear()
-    recipe.tags.set(data["tags"])
-    RecipeIngredient.objects.filter(recipe=recipe).delete()
-    for item in data["ingredients"]:
-        ingredient = Ingredient.objects.get(id=item["id"])
-        RecipeIngredient.objects.create(
-            recipe=recipe,
-            ingredient=ingredient,
-            amount=item["amount"]
-        )
+    try:
+        recipe.tags.set(data["tags"])
+        RecipeIngredient.objects.filter(recipe=recipe).delete()
+        for item in data["ingredients"]:
+            ingredient = Ingredient.objects.get(id=item["id"])
+            RecipeIngredient.objects.create(
+                recipe=recipe,
+                ingredient=ingredient,
+                amount=item["amount"]
+            )
 
-    return JsonResponse(RecipeSerializer(
-        recipe, context={"request": request}).data)
+        return JsonResponse(RecipeSerializer(
+            recipe, context={"request": request}).data)
+    except Exception as e:
+        return JsonResponse({"field_name": [str(e)]}, status=400)
 
 
 # Проверка JSON
@@ -141,7 +142,7 @@ def check_fields(body):
     # Проверка ингредиентов
     try:
         ingredients = data["ingredients"]
-        validators.ingredient.validate_ingredients(data)
+        assert isinstance(ingredients, list)
     except KeyError:
         return "Поле ingredients отсутствует"
     except ValueError as e:
@@ -150,7 +151,7 @@ def check_fields(body):
     # Проверка тегов
     try:
         tags = data["tags"]
-        validators.tag.validate_tags(data)
+        assert isinstance(tags, list)
     except KeyError:
         return "Поле tags отсутствует"
     except ValueError as e:

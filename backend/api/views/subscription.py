@@ -40,10 +40,9 @@ def subscribe(request, author_id):
     if request.method == "DELETE":
         is_deleted = Subscribtion.objects.filter(
             author=author, user=request.user).delete()
-        print(is_deleted)
 
         # Валидация подписки
-        if not is_deleted:
+        if not is_deleted[0]:
             return JsonResponse({"error": "Подписка не найдена"}, status=400)
         return HttpResponse(status=204)
 

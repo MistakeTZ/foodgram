@@ -3,6 +3,7 @@ from recipe.models.recipe import Recipe, RecipeIngredient
 from recipe.models.recipe_user_model import Cart
 from api.serializers.short_recipe import ShortRecipeSerializer
 from django.http import JsonResponse, HttpResponse, FileResponse
+from django.db.utils import IntegrityError
 from datetime import datetime, timezone, timedelta
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.pdfbase import pdfmetrics
@@ -23,19 +24,18 @@ def shopping_cart(request, recipe_id):
 
     # Добавление рецепта в список
     if request.method == "POST":
-        cart = Cart.objects.filter(user=request.user, recipe=recipe).first()
-        if cart:
-            return JsonResponse({"error": "Рецепт уже в избранном"},
-                                status=400)
-        Cart.objects.create(user=request.user, recipe=recipe)
+        try:
+            Cart.objects.create(user=request.user, recipe=recipe)
+        except IntegrityError:
+            return JsonResponse({"field_name": ["Рецепт уже в избранном"]}, status=400)
         return JsonResponse(ShortRecipeSerializer(recipe).data, status=201)
 
     # Удаление рецепта из списка
     if request.method == "DELETE":
-        cart = Cart.objects.filter(user=request.user, recipe=recipe).first()
-        if not cart:
+        is_deleted = Cart.objects.filter(
+            user=request.user, recipe=recipe).delete()
+        if not is_deleted[0]:
             return JsonResponse({"error": "Рецепт не в избранном"}, status=400)
-        cart.delete()
         return HttpResponse(status=204)
 
 
@@ -45,6 +45,7 @@ def download_shopping_cart(request):
     # Получение списка ингредиентов
     cart = Cart.objects.filter(
         user=request.user).values_list("recipe_id", flat=True)
+    # TODO: Создавать объект нужно через сохранение сериалайзера, а не подобным образом вручную
     ingredients = (
         RecipeIngredient.objects
         .filter(recipe_id__in=cart)

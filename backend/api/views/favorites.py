@@ -1,6 +1,6 @@
 from rest_framework.decorators import api_view
 from recipe.models.recipe import Recipe
-from recipe.models.favorite import Favorite
+from recipe.models.recipe_user_model import Favorite
 from api.serializers.short_recipe import ShortRecipeSerializer
 from django.http import JsonResponse, HttpResponse
 

@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from recipe.models.recipe import Recipe, RecipeIngredient
-from recipe.models.favorite import Favorite
-from recipe.models.cart import Cart
+from recipe.models.recipe_user_model import Favorite
+from recipe.models.recipe_user_model import Cart
 from recipe.models.ingredient import Ingredient
 from recipe.paginator import RecipePagination
 from api.serializers.recipe import RecipeSerializer

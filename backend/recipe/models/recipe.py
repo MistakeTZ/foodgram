@@ -19,6 +19,10 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(Tag)
     cooking_time = models.IntegerField()
 
+    class Meta:
+        verbose_name = 'Рецепт'
+        verbose_name_plural = 'Рецепты'
+
     def __str__(self):
         return self.title
 
@@ -36,3 +40,10 @@ class RecipeIngredient(models.Model):
         related_name='recipe_ingredients'
     )
     amount = models.IntegerField()
+
+    class Meta:
+        verbose_name = 'Ингредиент в рецепте'
+        verbose_name_plural = 'Ингредиенты в рецепте'
+
+    def __str__(self):
+        return f"{self.ingredient.name} ({self.amount} {self.ingredient.measurement_unit})"

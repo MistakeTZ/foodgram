@@ -25,11 +25,12 @@ class RecipeAdmin(admin.ModelAdmin):
     list_filter = ('tags',)
 
     def added_in_favorites(self, obj):
-        count = models.favorite.Favorite.objects.filter(recipe=obj).count()
+        count = models.recipe_user_model.Favorite.objects.filter(
+            recipe=obj).count()
         return count
 
 
 # Регистрация избранного
-admin.site.register(models.favorite.Favorite)
+admin.site.register(models.recipe_user_model.Favorite)
 # Регистрация корзины
-admin.site.register(models.cart.Cart)
+admin.site.register(models.recipe_user_model.Cart)

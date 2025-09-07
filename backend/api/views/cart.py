@@ -1,6 +1,6 @@
 from rest_framework.decorators import api_view
 from recipe.models.recipe import Recipe, RecipeIngredient
-from recipe.models.cart import Cart
+from recipe.models.recipe_user_model import Cart
 from api.serializers.short_recipe import ShortRecipeSerializer
 from django.http import JsonResponse, HttpResponse, FileResponse
 from datetime import datetime, timezone, timedelta

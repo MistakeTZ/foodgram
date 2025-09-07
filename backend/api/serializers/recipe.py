@@ -1,8 +1,10 @@
 from rest_framework import serializers
-from .models.recipe import RecipeIngredient, Recipe, Tag, Ingredient
-from .models.favorite import Favorite
-from .models.cart import Cart
-from api.serializers import UserSerializer
+from recipe.models.recipe import Recipe
+from recipe.models.favorite import Favorite
+from recipe.models.cart import Cart
+from api.serializers.user import UserSerializer
+from api.serializers.tag import TagSerializer
+from api.serializers.ingredient import IngredientSerializer
 
 
 # Сериализатор рецепта
@@ -69,30 +71,3 @@ class RecipeSerializer(serializers.ModelSerializer):
             many=True,
             context={"recipe": obj}
         ).data
-
-
-# Сериализатор тега
-class TagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Tag
-        fields = ["id", "name", "slug"]
-
-
-# Сериализатор ингредиента
-class IngredientSerializer(serializers.ModelSerializer):
-    amount = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Ingredient
-        fields = ["id", "name", "measurement_unit", "amount"]
-
-    def get_amount(self, obj):
-        return RecipeIngredient.objects.get(
-            ingredient=obj, recipe=self.context["recipe"]).amount
-
-
-# Сериализатор ингредиента
-class IngredientSingleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Ingredient
-        fields = ["id", "name", "measurement_unit"]

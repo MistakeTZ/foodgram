@@ -1,7 +1,7 @@
 from django.db.models import Q, Case, When, Value, IntegerField
 from django.http import JsonResponse
-from ..models.ingredient import Ingredient
-from ..serializers import IngredientSingleSerializer
+from recipe.models.ingredient import Ingredient
+from api.serializers.ingredient import IngredientSingleSerializer
 from django.views.decorators.http import require_GET
 
 

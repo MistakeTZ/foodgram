@@ -1,8 +1,7 @@
-from rest_framework.decorators import (
-    api_view, authentication_classes, permission_classes)
-from ..models.recipe import Recipe
-from ..models.favorite import Favorite
-from api.serializers import ShortRecipeSerializer
+from rest_framework.decorators import api_view
+from recipe.models.recipe import Recipe
+from recipe.models.favorite import Favorite
+from api.serializers.short_recipe import ShortRecipeSerializer
 from django.http import JsonResponse, HttpResponse
 
 

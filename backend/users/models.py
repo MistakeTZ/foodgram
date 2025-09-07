@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 def user_avatar_path(instance, filename):
-    return f"images/avatars/user_{instance.user.id}/{filename}"
+    return f"images/avatars/user_{instance.id}/{filename}"
 
 
 class User(AbstractUser):

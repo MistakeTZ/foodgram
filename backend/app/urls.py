@@ -20,7 +20,6 @@ from django.conf.urls import include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('recipe.urls')),
     path('api/', include('api.urls')),
-    path('s/', include('recipe.short_urls')),
+    path('s/', include('api.short_urls')),
 ]

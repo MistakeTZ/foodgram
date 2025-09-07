@@ -1,7 +1,7 @@
 from django.http import JsonResponse, HttpResponse
-from ..models.recipe import Recipe
-from ..serializers import RecipeSerializer
-from ..recipes import create_recipe, get_recipes, update_recipe
+from recipe.models.recipe import Recipe
+from api.serializers.recipe import RecipeSerializer
+from recipe.recipes import create_recipe, get_recipes, update_recipe
 from django.shortcuts import get_object_or_404
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny

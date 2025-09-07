@@ -1,10 +1,10 @@
 from django.http import JsonResponse
-from .models.recipe import Recipe, RecipeIngredient
-from .models.favorite import Favorite
-from .models.cart import Cart
-from .models.ingredient import Ingredient
-from .paginator import RecipePagination
-from .serializers import RecipeSerializer
+from recipe.models.recipe import Recipe, RecipeIngredient
+from recipe.models.favorite import Favorite
+from recipe.models.cart import Cart
+from recipe.models.ingredient import Ingredient
+from recipe.paginator import RecipePagination
+from api.serializers.recipe import RecipeSerializer
 from django.core.files.base import ContentFile
 from django.shortcuts import redirect
 from . import validators

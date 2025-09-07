@@ -1,9 +1,8 @@
 from django.http.response import JsonResponse, HttpResponse
 from users.models import User
 from users.models import Subscribtion
-from api.serializers import UserWithRecipesSerializer
-from rest_framework.decorators import (
-    api_view, authentication_classes, permission_classes)
+from api.serializers.user import UserWithRecipesSerializer
+from rest_framework.decorators import api_view
 from api.paginator import UsersPagination
 
 

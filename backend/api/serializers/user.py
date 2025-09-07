@@ -2,6 +2,7 @@ from rest_framework import serializers
 from users.models import User
 from recipe.models.recipe import Recipe
 from users.models import Subscribtion
+from api.serializers.short_recipe import ShortRecipeSerializer
 
 
 # Сериализатор пользователя
@@ -27,18 +28,6 @@ class UserSerializer(serializers.ModelSerializer):
         if obj.avatar:
             return obj.avatar.url
         return None
-
-
-# Сериализатор короткого рецепта
-class ShortRecipeSerializer(serializers.ModelSerializer):
-    name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Recipe
-        fields = ["id", "name", "image", "cooking_time"]
-
-    def get_name(self, obj):
-        return obj.title
 
 
 # Сериализатор пользователя с рецептами

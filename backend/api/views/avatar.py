@@ -1,11 +1,6 @@
 from django.http.response import JsonResponse, HttpResponse
-from rest_framework.decorators import (
-    api_view,
-    authentication_classes,
-    permission_classes
-)
+from rest_framework.decorators import api_view
 from django.core.files.base import ContentFile
-from users.models import User
 import json
 import base64
 from uuid import uuid4

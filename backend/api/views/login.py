@@ -1,8 +1,7 @@
 from django.views.decorators.csrf import csrf_exempt
 from django.http.response import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
-from rest_framework.decorators import (
-    authentication_classes, permission_classes, api_view)
+from rest_framework.decorators import api_view
 from users.models import User
 from rest_framework.authtoken.models import Token
 import json

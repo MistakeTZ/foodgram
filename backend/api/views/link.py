@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from ..models.recipe import Recipe
+from recipe.models.recipe import Recipe
 from django.shortcuts import redirect
 from django.urls import reverse
 

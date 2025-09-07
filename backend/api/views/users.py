@@ -2,11 +2,10 @@ from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from users.models import User
 from .register import register_user
-from rest_framework.decorators import (
-    api_view, authentication_classes, permission_classes)
+from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.generics import ListAPIView
-from api.serializers import UserSerializer
+from api.serializers.user import UserSerializer
 from api.paginator import UsersPagination
 
 

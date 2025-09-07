@@ -7,4 +7,6 @@ class CustomUserAdmin(admin.ModelAdmin):
     search_fields = ("username", "email", "first_name", "last_name")
 
 
-admin.site.register(Subscribtion)
+@admin.register(Subscribtion)
+class SubscribtionAdmin(admin.ModelAdmin):
+    list_display = ("user", "author")

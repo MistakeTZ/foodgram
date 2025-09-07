@@ -1,11 +1,16 @@
 from django.contrib import admin
 from recipe import models
 
-admin.site.register(models.tag.Tag)
+
+@admin.register(models.tag.Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name", "slug",)
 
 
 @admin.register(models.ingredient.Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
+    list_display = ("name", "measurement_unit")
     search_fields = ("name",)
 
 
@@ -28,5 +33,11 @@ class RecipeAdmin(admin.ModelAdmin):
         return count
 
 
-admin.site.register(models.recipe_user_model.Favorite)
-admin.site.register(models.recipe_user_model.Cart)
+@admin.register(models.recipe_user_model.Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = ("user", "recipe")
+
+
+@admin.register(models.recipe_user_model.Cart)
+class CartAdmin(admin.ModelAdmin):
+    list_display = ("user", "recipe")

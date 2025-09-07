@@ -2,7 +2,7 @@ import io
 from datetime import datetime, timedelta, timezone
 from os import path
 
-from recipe.models.recipe import Recipe, RecipeIngredient
+from recipe.models.recipe import RecipeIngredient
 from recipe.models.recipe_user_model import Cart
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfbase import pdfmetrics

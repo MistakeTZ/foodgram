@@ -5,8 +5,10 @@ from api.views.register import register_user
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.generics import ListAPIView
+from rest_framework.views import APIView
 from users.serializers import UserSerializer
 from api.paginator import UsersPagination
+from users.auth import auth_user
 
 
 # Обработка запроса /users/
@@ -16,6 +18,8 @@ class UserListView(ListAPIView):
 
     # Получение списка пользователей
     def get(self, request):
+        request = auth_user(request)
+
         paginator = UsersPagination()
         paginator.page_size = 10
         queryset = User.objects.all()
@@ -32,18 +36,26 @@ class UserListView(ListAPIView):
 
 
 # Получение пользователя
-@csrf_exempt
-def get_user(request, user_id):
-    user = User.objects.filter(id=user_id).first()
+class UserView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
-    if not user:
-        return JsonResponse({"detail": "User does not exist"}, status=404)
+    # Получение списка пользователей
+    def get(self, request, user_id):
+        request = auth_user(request)
 
-    return JsonResponse(UserSerializer(
-        user, context={"request": request}).data)
+        user = User.objects.filter(id=user_id).first()
+
+        if not user:
+            return JsonResponse({"detail": "User does not exist"}, status=404)
+
+        return JsonResponse(UserSerializer(
+            user, context={"request": request}).data)
 
 
 # Получение моего профиля
-@api_view(["GET"])
-def me(request):
-    return get_user(request, request.user.id)
+class MeView(APIView):
+    def get(self, request):
+        print(request.user)
+        return JsonResponse(UserSerializer(
+            request.user, context={"request": request}).data)

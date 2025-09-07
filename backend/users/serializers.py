@@ -1,8 +1,6 @@
 from rest_framework import serializers
 from users.models import User
-from recipe.models.recipe import Recipe
 from users.models import Subscribtion
-from api.serializers.short_recipe import ShortRecipeSerializer
 import re
 
 
@@ -58,22 +56,13 @@ class UserSerializer(serializers.ModelSerializer):
             return obj.avatar.url
         return None
 
+    # def get_recipes_count(self, obj):
+    #     recipes = Recipe.objects.filter(author=obj)
+    #     return recipes.count()
 
-# Сериализатор пользователя с рецептами
-class UserWithRecipesSerializer(UserSerializer):
-    recipes_count = serializers.SerializerMethodField()
-    recipes = serializers.SerializerMethodField()
-
-    class Meta(UserSerializer.Meta):
-        fields = UserSerializer.Meta.fields + ["recipes", "recipes_count"]
-
-    def get_recipes_count(self, obj):
-        recipes = Recipe.objects.filter(author=obj)
-        return recipes.count()
-
-    def get_recipes(self, obj):
-        recipes = Recipe.objects.filter(author=obj)
-        return ShortRecipeSerializer(recipes, many=True).data
+    # def get_recipes(self, obj):
+    #     recipes = Recipe.objects.filter(author=obj)
+    #     return ShortRecipeSerializer(recipes, many=True).data
 
 
 def password_validation(value):

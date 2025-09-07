@@ -1,15 +1,18 @@
 from django.http.response import JsonResponse, HttpResponse
 from users.models import User
 from users.models import Subscribtion
-from users.serializers import UserWithRecipesSerializer
+from api.serializers.recipe import UserWithRecipesSerializer
 from rest_framework.decorators import api_view
 from api.paginator import UsersPagination
+from django.db.models import Count
 
 
 # Создание/удаление подписки
 @api_view(["POST", "DELETE"])
 def subscribe(request, author_id):
-    author = User.objects.filter(id=author_id).first()
+    author = User.objects.filter(id=author_id).annotate(
+        recipes_count=Count('recipes')
+    ).first()
 
     # Проверка существования пользователя
     if not author:
@@ -34,13 +37,13 @@ def subscribe(request, author_id):
 
     # Удаление подписки
     if request.method == "DELETE":
-        sub = Subscribtion.objects.filter(
-            author=author, user=request.user).first()
+        is_deleted = Subscribtion.objects.filter(
+            author=author, user=request.user).delete()
+        print(is_deleted)
 
         # Валидация подписки
-        if not sub:
+        if not is_deleted:
             return JsonResponse({"error": "Подписка не найдена"}, status=400)
-        sub.delete()
         return HttpResponse(status=204)
 
 
@@ -50,7 +53,7 @@ def subscribtions(request):
     subbed = User.objects.filter(
         id__in=Subscribtion.objects.filter(
             user=request.user).values_list("author_id", flat=True)
-    )
+    ).annotate(recipes_count=Count('recipes'))
 
     # Пагинация
     paginator = UsersPagination()

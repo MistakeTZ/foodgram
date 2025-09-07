@@ -3,6 +3,7 @@ from recipe.models.recipe import Recipe
 from api.serializers.recipe import RecipeSerializer
 from recipe.recipes import create_recipe, get_recipes, update_recipe
 from django.shortcuts import get_object_or_404
+from users.auth import auth_user
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
@@ -16,14 +17,7 @@ class RecipesView(APIView):
 
     # Получение списка рецептов
     def get(self, request):
-        # Аутенификация по токену
-        auth = TokenAuthentication()
-        try:
-            user_auth_tuple = auth.authenticate(request)
-            if user_auth_tuple:
-                request.user, request.auth = user_auth_tuple
-        except AuthenticationFailed:
-            pass
+        request = auth_user(request)
 
         # Получение списка рецептов
         return get_recipes(request)

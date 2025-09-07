@@ -2,6 +2,7 @@ from rest_framework import serializers
 from recipe.models.recipe import Recipe
 from recipe.models.favorite import Favorite
 from recipe.models.cart import Cart
+from api.serializers.short_recipe import ShortRecipeSerializer
 from users.serializers import UserSerializer
 from api.serializers.tag import TagSerializer
 from api.serializers.ingredient import IngredientSerializer
@@ -71,3 +72,12 @@ class RecipeSerializer(serializers.ModelSerializer):
             many=True,
             context={"recipe": obj}
         ).data
+
+
+# Сериализатор пользователя с рецептами
+class UserWithRecipesSerializer(UserSerializer):
+    recipes_count = serializers.IntegerField(read_only=True, default=0)
+    recipes = ShortRecipeSerializer(many=True, read_only=True)
+
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ["recipes", "recipes_count"]

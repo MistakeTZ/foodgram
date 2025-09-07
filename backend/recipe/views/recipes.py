@@ -4,7 +4,7 @@ from ..serializers import RecipeSerializer
 from ..recipes import create_recipe, get_recipes, update_recipe
 from django.shortcuts import get_object_or_404
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.exceptions import AuthenticationFailed
 
@@ -12,6 +12,7 @@ from rest_framework.exceptions import AuthenticationFailed
 # Работа с рецептами
 class RecipesView(APIView):
     authentication_classes = []
+    permission_classes = [AllowAny]
 
     # Получение списка рецептов
     def get(self, request):
@@ -47,6 +48,7 @@ class RecipesView(APIView):
 # Работа с конкретным рецептом
 class RecipeView(APIView):
     authentication_classes = []
+    permission_classes = [AllowAny]
 
     # Получение конкретного рецепта
     def get_object(self, recipe_id):

@@ -1,10 +1,8 @@
 from rest_framework.decorators import (
     api_view, authentication_classes, permission_classes)
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
 from ..models.recipe import Recipe, RecipeIngredient
 from ..models.cart import Cart
-from apiuser.serializers import ShortRecipeSerializer
+from api.serializers import ShortRecipeSerializer
 from django.http import JsonResponse, HttpResponse, FileResponse
 from datetime import datetime, timezone, timedelta
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
@@ -17,8 +15,6 @@ from os import path
 
 # Изменение списка покупок
 @api_view(["POST", "DELETE"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def shopping_cart(request, recipe_id):
     recipe = Recipe.objects.filter(id=recipe_id).first()
 
@@ -46,8 +42,6 @@ def shopping_cart(request, recipe_id):
 
 # Скачивание списка покупок
 @api_view(["GET"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def download_shopping_cart(request):
     # Получение списка ингредиентов
     cart = Cart.objects.filter(

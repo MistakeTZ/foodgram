@@ -1,6 +1,6 @@
 [
 {
-  "model": "auth.user",
+  "model": "users.user",
   "pk": 1,
   "fields": {
     "password": "pbkdf2_sha256$1000000$bIyJS0PLmxAovjkWNKuPvj$eTtt7SULGeUvpI3sX/SFkNcGURJz9d22ncLxbN08oFk=",
@@ -13,12 +13,13 @@
     "is_staff": true,
     "is_active": true,
     "date_joined": "2025-09-01T10:49:47.905Z",
+    "avatar": "",
     "groups": [],
     "user_permissions": []
   }
 },
 {
-  "model": "auth.user",
+  "model": "users.user",
   "pk": 2,
   "fields": {
     "password": "pbkdf2_sha256$1000000$yOhpX1B8B125kbUBR2Psqk$gRU5yQVAEnF2mQR3m8TySrLHJHqQe/zGyIpv9sEodQE=",
@@ -31,12 +32,13 @@
     "is_staff": false,
     "is_active": true,
     "date_joined": "2025-09-01T10:49:47.905Z",
+    "avatar": "images/avatars/user_4/50adba52-5394-4ed5-a032-5c25ac62ebd5.jpeg",
     "groups": [],
     "user_permissions": []
   }
 },
 {
-  "model": "auth.user",
+  "model": "users.user",
   "pk": 3,
   "fields": {
     "password": "pbkdf2_sha256$1000000$UM5LSDAFskPAopFrUUJAG5$o5BtxaWGTYSkC7D9GdaT/a2G/c/mR/rUH22oitulL6M=",
@@ -49,12 +51,13 @@
     "is_staff": false,
     "is_active": true,
     "date_joined": "2025-09-02T06:25:58.502Z",
+    "avatar": "images/avatars/user_9/fe6312e4-7434-4a78-8afe-b664b3217a42.png",
     "groups": [],
     "user_permissions": []
   }
 },
 {
-  "model": "auth.user",
+  "model": "users.user",
   "pk": 4,
   "fields": {
     "password": "pbkdf2_sha256$1000000$Z2b0mt0lwbSExk4bxHvsnb$HWY64l0v+496Qte68w3h6cCVLkNw/M12KWpwrxhLrKg=",
@@ -67,12 +70,13 @@
     "is_staff": false,
     "is_active": true,
     "date_joined": "2025-09-02T06:38:00.285Z",
+    "avatar": "images/avatars/user_10/b707cd03-d4c3-4d22-af16-88034c77d994.png",
     "groups": [],
     "user_permissions": []
   }
 },
 {
-  "model": "auth.user",
+  "model": "users.user",
   "pk": 5,
   "fields": {
     "password": "pbkdf2_sha256$1000000$t51UiFbT499LKRUT7aaInf$GIyFoA/DOdldT38IfJTJ+S3a1ywideKgyKhBw2DPb5U=",
@@ -85,6 +89,7 @@
     "is_staff": false,
     "is_active": true,
     "date_joined": "2025-09-02T06:44:59.280Z",
+    "avatar": "images/avatars/user_11/414f5653-cbe6-41c2-8436-a2802a46e829.png",
     "groups": [],
     "user_permissions": []
   }

@@ -1,17 +1,13 @@
 from rest_framework.decorators import (
     api_view, authentication_classes, permission_classes)
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
 from ..models.recipe import Recipe
 from ..models.favorite import Favorite
-from apiuser.serializers import ShortRecipeSerializer
+from api.serializers import ShortRecipeSerializer
 from django.http import JsonResponse, HttpResponse
 
 
 # Изменение списка избранного
 @api_view(["POST", "DELETE"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def favorite(request, recipe_id):
     recipe = Recipe.objects.filter(id=recipe_id).first()
 

@@ -1,24 +1,20 @@
 from django.http.response import JsonResponse, HttpResponse
-from django.contrib.auth.models import User
-from ..models import Subscribtion
-from ..serializers import UserWithRecipesSerializer
+from users.models import User
+from users.models import Subscribtion
+from api.serializers import UserWithRecipesSerializer
 from rest_framework.decorators import (
     api_view, authentication_classes, permission_classes)
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
-from ..paginator import UsersPagination
+from api.paginator import UsersPagination
 
 
 # Создание/удаление подписки
 @api_view(["POST", "DELETE"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def subscribe(request, author_id):
     author = User.objects.filter(id=author_id).first()
 
     # Проверка существования пользователя
     if not author:
-        return JsonResponse({"error": "Польлзователь не найден"}, status=404)
+        return JsonResponse({"error": "Пользователь не найден"}, status=404)
 
     # Создание подписки
     if request.method == "POST":
@@ -51,8 +47,6 @@ def subscribe(request, author_id):
 
 # Получение списка подписок
 @api_view(["GET"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def subscribtions(request):
     subbed = User.objects.filter(
         id__in=Subscribtion.objects.filter(

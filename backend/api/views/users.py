@@ -1,23 +1,23 @@
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.models import User
+from users.models import User
 from .register import register_user
 from rest_framework.decorators import (
     api_view, authentication_classes, permission_classes)
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import AllowAny
 from rest_framework.generics import ListAPIView
-from ..serializers import UserSerializer
-from ..paginator import UsersPagination
+from api.serializers import UserSerializer
+from api.paginator import UsersPagination
 
 
 # Обработка запроса /users/
 class UserListView(ListAPIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
 
     # Получение списка пользователей
     def get(self, request):
+        print(1)
         paginator = UsersPagination()
         paginator.page_size = 10
         queryset = User.objects.all()
@@ -47,7 +47,5 @@ def get_user(request, user_id):
 
 # Получение моего профиля
 @api_view(["GET"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def me(request):
     return get_user(request, request.user.id)

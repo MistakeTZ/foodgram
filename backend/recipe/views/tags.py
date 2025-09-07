@@ -7,6 +7,7 @@ from django.views.decorators.http import require_GET
 # Получение списка тегов
 @require_GET
 def tags(request):
+    print(10)
     tag_list = TagSerializer(Tag.objects.all(), many=True).data
 
     return JsonResponse(tag_list, safe=False)

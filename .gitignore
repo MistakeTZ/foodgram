@@ -140,3 +140,5 @@ dmypy.json
 
 backend/staticfiles/
 frontend1/
+
+tests/

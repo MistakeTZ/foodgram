@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
+from users.models import User
 from recipe.models.recipe import Recipe
-from .models import Subscribtion
+from users.models import Subscribtion
 
 
 # Сериализатор пользователя
@@ -24,8 +24,8 @@ class UserSerializer(serializers.ModelSerializer):
             user=self.context["request"].user).exists()
 
     def get_avatar(self, obj):
-        if hasattr(obj, "profile") and obj.profile.avatar:
-            return obj.profile.avatar.url
+        if obj.avatar:
+            return obj.avatar.url
         return None
 
 

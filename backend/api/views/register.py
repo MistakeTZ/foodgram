@@ -1,5 +1,5 @@
 from django.http.response import JsonResponse
-from django.contrib.auth.models import User
+from users.models import User
 from django.db import IntegrityError
 import re
 import json

@@ -1,12 +1,16 @@
 from django.db import models
-from django.contrib.auth.models import User
-from .tag import Tag
-from .ingredient import Ingredient
+from users.models import User
+from recipe.models.tag import Tag
+from recipe.models.ingredient import Ingredient
 
 
 # Модель рецепта
 class Recipe(models.Model):
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='recipes'
+    )
     title = models.CharField(max_length=100)
     image = models.ImageField(upload_to='images/recipes/')
     description = models.TextField()
@@ -21,6 +25,14 @@ class Recipe(models.Model):
 
 # Модель ингредиента в рецепте
 class RecipeIngredient(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='recipe_ingredients'
+    )
+    ingredient = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        related_name='recipe_ingredients'
+    )
     amount = models.IntegerField()

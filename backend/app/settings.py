@@ -18,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = getenv("DJANGO_SECRET_KEY", "fallback-secret-key")
 
-DEBUG = getenv("DJANGO_DEBUG", "False") == "True"
+DEBUG = getenv("DJANGO_DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,backend").split(
     ","
@@ -39,8 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'api',
     'recipe',
-    'apiuser',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -75,7 +76,7 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.TokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+        "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
@@ -105,6 +106,8 @@ else:
             "PORT": getenv("POSTGRES_PORT") or "5432",
         }
     }
+
+AUTH_USER_MODEL = "users.User"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

@@ -3,9 +3,7 @@ from django.http.response import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from rest_framework.decorators import (
     authentication_classes, permission_classes, api_view)
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth.models import User
+from users.models import User
 from rest_framework.authtoken.models import Token
 import json
 import re
@@ -43,8 +41,6 @@ def login(request):
 
 # Выход пользователя
 @api_view(["POST"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def logout(request):
     # Удаление токена
     Token.objects.get(user=request.user).delete()
@@ -53,8 +49,6 @@ def logout(request):
 
 # Изменение пароля
 @api_view(["POST"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def set_password(request):
     user = request.user
 

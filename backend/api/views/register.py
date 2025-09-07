@@ -18,7 +18,8 @@ def register_user(request):
             {"field_name": ["Invalid JSON"]}, status=HTTPStatus.BAD_REQUEST
         )
 
-    serializer = UserSerializer(data=request.data)
+    serializer = UserSerializer(
+        data=request.data, context={"request": request})
     if serializer.is_valid():
         user = serializer.save()
     else:

@@ -26,7 +26,11 @@ urlpatterns = [
          views.link.get_link, name="get_link"),
     path("tags/", views.tags.tags, name="tags"),
     path("tags/<int:tag_id>/", views.tags.tag, name="tag"),
-    path("ingredients/", views.ingredients.ingredients, name="ingredients"),
+    path(
+        "ingredients/",
+        views.ingredients.IngredientListView.as_view(),
+        name="ingredients"
+    ),
     path(
         "ingredients/<int:ingredient_id>/",
         views.ingredients.ingredient,

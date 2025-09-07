@@ -1,37 +1,37 @@
 from http import HTTPStatus
 
 from api.serializers.ingredient import IngredientSingleSerializer
-from django.db.models import Case, IntegerField, Q, Value, When
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from recipe.models.ingredient import Ingredient
+from rest_framework.permissions import AllowAny
+from rest_framework.generics import ListAPIView
+from django.db.models import Case, When, Value, IntegerField
 
 
-# Получение списка ингредиентов
-@require_GET
-def ingredients(request):
-    name = request.GET.get("name", "")
+class IngredientListView(ListAPIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    serializer_class = IngredientSingleSerializer
+    pagination_class = None
 
-    # Проверка ввода
-    if name:
-        ingredient_list = (
-            Ingredient.objects.annotate(
-                starts_with_name=Case(
+    def get_queryset(self):
+        name = self.request.query_params.get("name")
+        qs = Ingredient.objects.all()
+        if not name:
+            return qs
+        return (
+            qs.filter(name__icontains=name)
+            .annotate(
+                rank=Case(
                     When(name__istartswith=name, then=Value(0)),
-                    default=Value(1),
-                    output_field=IntegerField(),
+                    When(name__icontains=name, then=Value(1)),
+                    default=Value(2),
+                    output_field=IntegerField()
                 )
             )
-            .filter(Q(name__icontains=name))
-            .order_by("starts_with_name", "name")
+            .order_by('rank', 'name')
         )
-    else:
-        ingredient_list = Ingredient.objects.all()
-
-    # Сериализация
-    serializer = IngredientSingleSerializer(ingredient_list, many=True)
-
-    return JsonResponse(serializer.data, safe=False)
 
 
 # Получение ингредиента

@@ -25,7 +25,7 @@ class UserPasswordUpdateSerializer(serializers.Serializer):
 # Сериализатор пользователя
 class UserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
-    avatar = serializers.SerializerMethodField()
+    avatar = serializers.ImageField(use_url=True, read_only=True)
 
     class Meta:
         model = User
@@ -58,11 +58,6 @@ class UserSerializer(serializers.ModelSerializer):
         return Subscribtion.objects.filter(
             author=obj, user=self.context["request"].user
         ).exists()
-
-    def get_avatar(self, obj):
-        if obj.avatar:
-            return obj.avatar.url
-        return None
 
 
 def password_validation(value):

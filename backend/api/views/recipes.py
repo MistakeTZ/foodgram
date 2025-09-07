@@ -1,9 +1,11 @@
 from http import HTTPStatus
 
 from api.serializers.recipe import RecipeSerializer
+from django.db.models import Exists, OuterRef
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404
+from django.http.response import Http404
 from recipe.models.recipe import Recipe
+from recipe.models.recipe_user_model import Favorite, Cart
 from recipe.recipes import create_recipe, get_recipes, update_recipe
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
@@ -51,17 +53,35 @@ class RecipeView(APIView):
     permission_classes = [AllowAny]
 
     # Получение конкретного рецепта
-    def get_object(self, recipe_id):
-        return get_object_or_404(Recipe, id=recipe_id)
+    def get_object(self, recipe_id, request):
+        if request.user.is_authenticated:
+            recipe = Recipe.objects.annotate(
+                is_in_shopping_cart=Exists(
+                    Cart.objects.filter(user=request.user,
+                                        recipe=OuterRef('pk'))
+                ),
+                is_favorited=Exists(
+                    Favorite.objects.filter(
+                        user=request.user, recipe=OuterRef('pk'))
+                )
+            ).filter(id=recipe_id).first()
+        else:
+            recipe = Recipe.objects.annotate(
+                is_in_shopping_cart=Exists(Cart.objects.none()),
+                is_favorited=Exists(Favorite.objects.none())
+            ).filter(id=recipe_id).first()
+
+        if recipe:
+            print(recipe.is_favorited)
+            return recipe
+        raise Http404("Recipe not found")
 
     # Получение конкретного рецепта
     def get(self, request, recipe_id):
-        recipe = self.get_object(recipe_id)
-        print(RecipeSerializer(recipe, context={"request": request}))
-        print(RecipeSerializer(recipe, context={"request": request}).data)
-        return JsonResponse(RecipeSerializer(
-            recipe, context={"request": request}
-        ).data)
+        request = auth_user(request)
+
+        recipe = self.get_object(recipe_id, request)
+        return JsonResponse(RecipeSerializer(recipe, context={"request": request}).data)
 
     # Обновление конкретного рецепта
     def patch(self, request, recipe_id):
@@ -93,7 +113,7 @@ class RecipeView(APIView):
             )
 
         # Проверка владельца
-        recipe = self.get_object(recipe_id)
+        recipe = self.get_object(recipe_id, request)
         if recipe.author != request.user:
             return JsonResponse(
                 {"error": "No permission"},

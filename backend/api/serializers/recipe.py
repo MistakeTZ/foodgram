@@ -9,8 +9,8 @@ from users.serializers import UserSerializer
 
 # Сериализатор рецепта
 class RecipeSerializer(serializers.ModelSerializer):
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField(read_only=True)
+    is_in_shopping_cart = serializers.BooleanField(read_only=True)
     image = serializers.SerializerMethodField()
     tags = TagSerializer(many=True, read_only=True)
     author = UserSerializer()
@@ -32,21 +32,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             "text",
             "cooking_time",
         ]
-
-    # Поля, которые возвращаются сериализатором
-    def get_is_favorited(self, obj):
-        if not self.context["request"].user.is_authenticated:
-            return False
-        return Favorite.objects.filter(
-            user=self.context["request"].user, recipe=obj
-        ).exists()
-
-    def get_is_in_shopping_cart(self, obj):
-        if not self.context["request"].user.is_authenticated:
-            return False
-        return Cart.objects.filter(
-            user=self.context["request"].user, recipe=obj
-        ).exists()
 
     def get_ingredients(self, obj):
         return IngredientSerializer(

@@ -35,7 +35,7 @@ class Favorite(UserRecipeRelation):
         related_name="favorites"
     )
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name="favorites"
+        Recipe, on_delete=models.CASCADE, related_name="in_favorites"
     )
 
     class Meta:
@@ -51,9 +51,9 @@ class Favorite(UserRecipeRelation):
 
 class Cart(UserRecipeRelation):
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="carts")
+        User, on_delete=models.CASCADE, related_name="cart")
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, related_name="carts")
+        Recipe, on_delete=models.CASCADE, related_name="in_carts")
 
     class Meta:
         verbose_name = "Корзина"

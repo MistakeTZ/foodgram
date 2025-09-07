@@ -6,6 +6,7 @@ from uuid import uuid4
 from api.paginator import RecipePagination
 from api.serializers.recipe import RecipeSerializer
 from django.core.files.base import ContentFile
+from django.db.models import Exists, OuterRef
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from recipe.models.ingredient import Ingredient
@@ -67,7 +68,26 @@ def get_recipes(request):
     tags = request.GET.getlist("tags")
 
     # Получение рецептов
-    recipes = Recipe.objects.all()
+    if request.user.is_authenticated:
+        recipes = Recipe.objects.annotate(
+            is_in_shopping_cart=Exists(
+                Cart.objects.filter(
+                    user=request.user,
+                    recipe=OuterRef("pk")
+                )
+            ),
+            is_favorited=Exists(
+                Favorite.objects.filter(
+                    user=request.user,
+                    recipe=OuterRef("pk")
+                )
+            )
+        ).all()
+    else:
+        recipes = Recipe.objects.annotate(
+            is_in_shopping_cart=Exists(Cart.objects.none()),
+            is_favorited=Exists(Favorite.objects.none())
+        ).all()
 
     # Фильтрация
     if author:
@@ -108,7 +128,11 @@ def get_recipes(request):
     recipes = paginator.paginate_queryset(recipes, request)
 
     return paginator.get_paginated_response(
-        RecipeSerializer(recipes, many=True, context={"request": request}).data
+        RecipeSerializer(
+            recipes,
+            many=True,
+            context={"request": request}
+        ).data
     )
 
 
@@ -141,7 +165,8 @@ def update_recipe(request, recipe):
             )
 
         return JsonResponse(RecipeSerializer(
-            recipe, context={"request": request}
+            recipe,
+            context={"request": request}
         ).data)
     except Exception as e:
         return JsonResponse(

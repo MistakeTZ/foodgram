@@ -2,6 +2,7 @@ from django.http.response import JsonResponse
 from django.db import IntegrityError
 from users.serializers import UserSerializer
 import json
+from http import HTTPStatus
 
 
 # Регистрация пользователя
@@ -12,7 +13,8 @@ def register_user(request):
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
-        return JsonResponse({"field_name": ["Invalid JSON"]}, status=400)
+        return JsonResponse({"field_name": ["Invalid JSON"]},
+                            status=HTTPStatus.BAD_REQUEST)
 
     serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
@@ -20,7 +22,8 @@ def register_user(request):
     else:
         field_errors = [
             str(field[0]) for field in serializer.errors.values()]
-        return JsonResponse({"field_name": field_errors}, status=400)
+        return JsonResponse({"field_name": field_errors},
+                            status=HTTPStatus.BAD_REQUEST)
 
     # Создание пользователя
     try:
@@ -32,8 +35,8 @@ def register_user(request):
             "last_name": user.last_name
         }
 
-        return JsonResponse(data, status=201)
+        return JsonResponse(data, status=HTTPStatus.CREATED)
     except IntegrityError:
         return JsonResponse({"field_name": [
             "Пользователь с таким email или username уже существует"]},
-            status=400)
+            status=HTTPStatus.BAD_REQUEST)

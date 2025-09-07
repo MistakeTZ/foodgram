@@ -10,6 +10,7 @@ from django.shortcuts import redirect
 import json
 import base64
 from uuid import uuid4
+from http import HTTPStatus
 
 
 # Создание рецепта
@@ -19,11 +20,12 @@ def create_recipe(request):
 
     # Если проверка не прошла или отсутствует изображение
     if isinstance(data, str):
-        return JsonResponse({"field_name": [data]}, status=400)
+        return JsonResponse({"field_name": [data]},
+                            status=HTTPStatus.BAD_REQUEST)
     if not data["image"]:
         return JsonResponse(
             {"field_name": ["Отсутствует изображение"]},
-            status=400
+            status=HTTPStatus.BAD_REQUEST
         )
 
     try:
@@ -49,7 +51,8 @@ def create_recipe(request):
 
         return redirect("recipe", new_recipe.id)
     except Exception as e:
-        return JsonResponse({"field_name": [str(e)]}, status=400)
+        return JsonResponse({"field_name": [str(e)]},
+                            status=HTTPStatus.BAD_REQUEST)
 
 
 # Получение рецептов
@@ -72,14 +75,16 @@ def get_recipes(request):
     # Фильтрация по избранному и в корзине
     if is_favorited:
         if not request.user.is_authenticated:
-            return JsonResponse({"error": "Вы не авторизованы"}, status=401)
+            return JsonResponse({"error": "Вы не авторизованы"},
+                                status=HTTPStatus.UNAUTHORIZED)
 
         favorites = Favorite.objects.filter(
             user=request.user).values_list("recipe_id", flat=True)
         recipes = recipes.filter(id__in=favorites)
     if is_in_shopping_cart:
         if not request.user.is_authenticated:
-            return JsonResponse({"error": "Вы не авторизованы"}, status=401)
+            return JsonResponse({"error": "Вы не авторизованы"},
+                                status=HTTPStatus.UNAUTHORIZED)
 
         cart = Cart.objects.filter(
             user=request.user).values_list("recipe_id", flat=True)
@@ -104,7 +109,8 @@ def update_recipe(request, recipe):
     # Проверка JSON
     data = check_fields(request.body)
     if isinstance(data, str):
-        return JsonResponse({"field_name": [data]}, status=400)
+        return JsonResponse({"field_name": [data]},
+                            status=HTTPStatus.BAD_REQUEST)
 
     # Обновление рецепта
     recipe.title = data["name"]
@@ -129,7 +135,8 @@ def update_recipe(request, recipe):
         return JsonResponse(RecipeSerializer(
             recipe, context={"request": request}).data)
     except Exception as e:
-        return JsonResponse({"field_name": [str(e)]}, status=400)
+        return JsonResponse({"field_name": [str(e)]},
+                            status=HTTPStatus.BAD_REQUEST)
 
 
 # Проверка JSON

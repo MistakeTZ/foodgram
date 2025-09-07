@@ -5,7 +5,7 @@ from api.serializers.recipe import UserWithRecipesSerializer
 from rest_framework.decorators import api_view
 from api.paginator import UsersPagination
 from django.db.models import Count
-from django.conf import settings
+from http import HTTPStatus
 
 
 # Создание/удаление подписки
@@ -17,7 +17,8 @@ def subscribe(request, author_id):
 
     # Проверка существования пользователя
     if not author:
-        return JsonResponse({"error": "Пользователь не найден"}, status=404)
+        return JsonResponse({"error": "Пользователь не найден"},
+                            status=HTTPStatus.NOT_FOUND)
 
     # Создание подписки
     if request.method == "POST":
@@ -27,14 +28,15 @@ def subscribe(request, author_id):
         # Валидация подписки
         if sub:
             return JsonResponse({"error": "Подписка уже существует"},
-                                status=400)
+                                status=HTTPStatus.BAD_REQUEST)
         if author == request.user:
             return JsonResponse({
                 "error": "Нельзя подписаться на самого себя"
-            }, status=400)
+            }, status=HTTPStatus.BAD_REQUEST)
         Subscribtion.objects.create(author=author, user=request.user)
         return JsonResponse(UserWithRecipesSerializer(author,
-                            context={"request": request}).data, status=201)
+                            context={"request": request}).data,
+                            status=HTTPStatus.CREATED)
 
     # Удаление подписки
     if request.method == "DELETE":
@@ -43,8 +45,9 @@ def subscribe(request, author_id):
 
         # Валидация подписки
         if not is_deleted[0]:
-            return JsonResponse({"error": "Подписка не найдена"}, status=400)
-        return HttpResponse(status=204)
+            return JsonResponse({"error": "Подписка не найдена"},
+                                status=HTTPStatus.BAD_REQUEST)
+        return HttpResponse(status=HTTPStatus.NO_CONTENT)
 
 
 # Получение списка подписок

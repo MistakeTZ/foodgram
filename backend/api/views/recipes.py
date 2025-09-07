@@ -8,6 +8,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.exceptions import AuthenticationFailed
+from http import HTTPStatus
 
 
 # Работа с рецептами
@@ -28,12 +29,14 @@ class RecipesView(APIView):
         auth = TokenAuthentication()
         user_auth_tuple = auth.authenticate(request)
         if not user_auth_tuple:
-            return JsonResponse({"error": "Invalid token"}, status=401)
+            return JsonResponse({"error": "Invalid token"},
+                                status=HTTPStatus.UNAUTHORIZED)
         request.user, request.auth = user_auth_tuple
 
         # Проверка разрешения
         if not IsAuthenticated().has_permission(request, self):
-            return JsonResponse({"error": "Permission denied"}, status=401)
+            return JsonResponse({"error": "Permission denied"},
+                                status=HTTPStatus.UNAUTHORIZED)
 
         # Создание рецепта
         return create_recipe(request)
@@ -72,22 +75,25 @@ class RecipeView(APIView):
             if not user_auth_tuple:
                 raise AuthenticationFailed
         except AuthenticationFailed:
-            return JsonResponse({"error": "Invalid token"}, status=401)
+            return JsonResponse({"error": "Invalid token"},
+                                status=HTTPStatus.UNAUTHORIZED)
 
         request.user, request.auth = user_auth_tuple
 
         # Проверка авторизации
         if not IsAuthenticated().has_permission(request, self):
-            return JsonResponse({"error": "Permission denied"}, status=401)
+            return JsonResponse({"error": "Permission denied"},
+                                status=HTTPStatus.UNAUTHORIZED)
 
         # Проверка владельца
         recipe = self.get_object(recipe_id)
         if recipe.author != request.user:
-            return JsonResponse({"error": "No permission"}, status=403)
+            return JsonResponse({"error": "No permission"},
+                                status=HTTPStatus.FORBIDDEN)
 
         # Обновление или удаление
         if method == "DELETE":
             recipe.delete()
-            return HttpResponse(status=204)
+            return HttpResponse(status=HTTPStatus.NO_CONTENT)
         elif method == "PATCH":
             return update_recipe(request, recipe)

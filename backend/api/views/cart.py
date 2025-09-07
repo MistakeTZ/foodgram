@@ -11,6 +11,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.styles import getSampleStyleSheet
 import io
 from os import path
+from http import HTTPStatus
 
 
 # Изменение списка покупок
@@ -20,23 +21,27 @@ def shopping_cart(request, recipe_id):
 
     # Проверка существования рецепта
     if not recipe:
-        return JsonResponse({"error": "Рецепт не найден"}, status=404)
+        return JsonResponse({"error": "Рецепт не найден"},
+                            status=HTTPStatus.NOT_FOUND)
 
     # Добавление рецепта в список
     if request.method == "POST":
         try:
             Cart.objects.create(user=request.user, recipe=recipe)
         except IntegrityError:
-            return JsonResponse({"field_name": ["Рецепт уже в избранном"]}, status=400)
-        return JsonResponse(ShortRecipeSerializer(recipe).data, status=201)
+            return JsonResponse({"field_name": ["Рецепт уже в избранном"]},
+                                status=HTTPStatus.BAD_REQUEST)
+        return JsonResponse(ShortRecipeSerializer(recipe).data,
+                            status=HTTPStatus.CREATED)
 
     # Удаление рецепта из списка
     if request.method == "DELETE":
         is_deleted = Cart.objects.filter(
             user=request.user, recipe=recipe).delete()
         if not is_deleted[0]:
-            return JsonResponse({"error": "Рецепт не в избранном"}, status=400)
-        return HttpResponse(status=204)
+            return JsonResponse({"error": "Рецепт не в избранном"},
+                                status=HTTPStatus.BAD_REQUEST)
+        return HttpResponse(status=HTTPStatus.NO_CONTENT)
 
 
 # Скачивание списка покупок
@@ -45,7 +50,8 @@ def download_shopping_cart(request):
     # Получение списка ингредиентов
     cart = Cart.objects.filter(
         user=request.user).values_list("recipe_id", flat=True)
-    # TODO: Создавать объект нужно через сохранение сериалайзера, а не подобным образом вручную
+    # TODO: Создавать объект нужно через сохранение сериалайзера,
+    # а не подобным образом вручную
     ingredients = (
         RecipeIngredient.objects
         .filter(recipe_id__in=cart)
@@ -54,18 +60,18 @@ def download_shopping_cart(request):
 
     # Группировка ингредиентов
     cart_ingredients = {}
-    for ing in ingredients:
+    for ingredient in ingredients:
         ingredient = cart_ingredients.pop(
-            ing.id,
+            ingredient.id,
             {
-                "name": ing.ingredient.name,
-                "measurement_unit": ing.ingredient.measurement_unit,
+                "name": ingredient.ingredient.name,
+                "measurement_unit": ingredient.ingredient.measurement_unit,
                 "amount": 0
             }
         )
-        ingredient["amount"] += ing.amount
+        ingredient["amount"] += ingredient.amount
 
-        cart_ingredients[ing.id] = ingredient
+        cart_ingredients[ingredient.id] = ingredient
 
     # Генерация PDF
     pdf = gen_pdf(cart_ingredients.values())
@@ -94,15 +100,15 @@ def gen_pdf(ingredients):
     elements.append(Spacer(1, 10))
 
     # Добавление ингредиентов
-    for i, ing in enumerate(ingredients):
+    for i, ingredient in enumerate(ingredients):
         if i == len(ingredients) - 1:
-            line = (f"- {ing['name']}: {ing['amount']} "
-                    f"{ing['measurement_unit']}."
+            line = (f"- {ingredient['name']}: {ingredient['amount']} "
+                    f"{ingredient['measurement_unit']}."
                     )
             elements.append(Paragraph(line, style))
         else:
-            line = (f"- {ing['name']}: {ing['amount']} "
-                    f"{ing['measurement_unit']};"
+            line = (f"- {ingredient['name']}: {ingredient['amount']} "
+                    f"{ingredient['measurement_unit']};"
                     )
             elements.append(Paragraph(line, style))
             elements.append(Spacer(1, 6))

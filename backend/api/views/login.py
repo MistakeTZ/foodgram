@@ -6,7 +6,7 @@ from users.models import User
 from users.serializers import UserPasswordUpdateSerializer
 from rest_framework.authtoken.models import Token
 import json
-import re
+from http import HTTPStatus
 
 
 # Логин пользователя
@@ -17,13 +17,15 @@ def login(request):
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
+        return JsonResponse({"error": "Invalid JSON"},
+                            status=HTTPStatus.BAD_REQUEST)
 
     # Проверка существования пользователя
     try:
         user = User.objects.get(email=data["email"])
     except User.DoesNotExist:
-        return JsonResponse({"error": "User does not exist"}, status=400)
+        return JsonResponse({"error": "User does not exist"},
+                            status=HTTPStatus.BAD_REQUEST)
 
     # Проверка пароля
     try:
@@ -32,11 +34,12 @@ def login(request):
         if not valid:
             raise ValueError
     except ValueError:
-        return JsonResponse({"error": "Неверный пароль"}, status=400)
+        return JsonResponse({"error": "Неверный пароль"},
+                            status=HTTPStatus.BAD_REQUEST)
 
     # Генерация токена
     token, created = Token.objects.get_or_create(user=user)
-    return JsonResponse({"auth_token": token.key}, status=200)
+    return JsonResponse({"auth_token": token.key}, status=HTTPStatus.OK)
 
 
 # Выход пользователя
@@ -44,7 +47,7 @@ def login(request):
 def logout(request):
     # Удаление токена
     Token.objects.get(user=request.user).delete()
-    return HttpResponse(status=204)
+    return HttpResponse(status=HTTPStatus.NO_CONTENT)
 
 
 # Изменение пароля
@@ -58,13 +61,13 @@ def set_password(request):
     except json.JSONDecodeError:
         return JsonResponse({
             "field_name": ["Invalid JSON"]},
-            status=400)
+            status=HTTPStatus.BAD_REQUEST)
 
     serializer = UserPasswordUpdateSerializer(user, data=data)
     if serializer.is_valid():
         serializer.save()
     else:
         return JsonResponse({"field_name": [str(field[0]) for field in list(
-            serializer.errors.values())]}, status=400)
+            serializer.errors.values())]}, status=HTTPStatus.BAD_REQUEST)
 
-    return HttpResponse(status=204)
+    return HttpResponse(status=HTTPStatus.NO_CONTENT)

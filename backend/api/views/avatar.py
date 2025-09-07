@@ -1,4 +1,5 @@
 from django.http.response import JsonResponse, HttpResponse
+from http import HTTPStatus
 from rest_framework.decorators import api_view
 from django.core.files.base import ContentFile
 import json
@@ -17,7 +18,8 @@ def avatar(request):
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
-            return JsonResponse({"field_name": ["Invalid JSON"]}, status=400)
+            return JsonResponse({"field_name": ["Invalid JSON"]},
+                                status=HTTPStatus.BAD_REQUEST)
 
         try:
             # Получение изображения
@@ -33,11 +35,12 @@ def avatar(request):
             return JsonResponse({"avatar": user.avatar.url})
         except KeyError:
             return JsonResponse(
-                {"field_name": ["Аватар не найден"]}, status=400)
+                {"field_name": ["Аватар не найден"]},
+                status=HTTPStatus.BAD_REQUEST)
 
     # Удаление аватара
     elif request.method == "DELETE":
         user = request.user
         user.avatar = None
         user.save()
-        return HttpResponse(status=204)
+        return HttpResponse(status=HTTPStatus.NO_CONTENT)

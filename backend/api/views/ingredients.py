@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from recipe.models.ingredient import Ingredient
 from api.serializers.ingredient import IngredientSingleSerializer
 from django.views.decorators.http import require_GET
+from http import HTTPStatus
 
 
 # Получение списка ингредиентов
@@ -34,5 +35,6 @@ def ingredient(request, ingredient_id):
     ingredient = Ingredient.objects.filter(id=ingredient_id).first()
     if not ingredient:
         return JsonResponse(
-            {"field_name": ["Ингредиент не найден"]}, status=400)
+            {"field_name": ["Ингредиент не найден"]},
+            status=HTTPStatus.BAD_REQUEST)
     return JsonResponse(IngredientSingleSerializer(ingredient).data)

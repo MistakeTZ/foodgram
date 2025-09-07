@@ -1,17 +1,14 @@
 from django.contrib import admin
 from recipe import models
 
-# Регистрация тега
 admin.site.register(models.tag.Tag)
 
 
-# Регистрация ингредиента
 @admin.register(models.ingredient.Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     search_fields = ("name",)
 
 
-# Регистрация рецепта
 class RecipeIngredientInline(admin.TabularInline):
     model = models.recipe.RecipeIngredient
     extra = 1
@@ -31,7 +28,5 @@ class RecipeAdmin(admin.ModelAdmin):
         return count
 
 
-# Регистрация избранного
 admin.site.register(models.recipe_user_model.Favorite)
-# Регистрация корзины
 admin.site.register(models.recipe_user_model.Cart)

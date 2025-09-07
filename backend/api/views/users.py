@@ -12,12 +12,10 @@ from users.models import User
 from users.serializers import UserSerializer
 
 
-# Обработка запроса /users/
 class UserListView(ListAPIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
-    # Получение списка пользователей
     def get(self, request):
         request = auth_user(request)
 
@@ -25,24 +23,20 @@ class UserListView(ListAPIView):
         paginator.page_size = 10
         queryset = User.objects.all()
 
-        # Пагинация
         result_page = paginator.paginate_queryset(queryset, request)
         serializer = UserSerializer(
             result_page, many=True, context={"request": request}
         )
         return paginator.get_paginated_response(serializer.data)
 
-    # Создание пользователя
     def post(self, request):
         return register_user(request)
 
 
-# Получение пользователя
 class UserView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
-    # Получение списка пользователей
     def get(self, request, user_id):
         request = auth_user(request)
 
@@ -58,7 +52,6 @@ class UserView(APIView):
         ).data)
 
 
-# Получение моего профиля
 class MeView(APIView):
     def get(self, request):
         return JsonResponse(

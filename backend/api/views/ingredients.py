@@ -34,7 +34,6 @@ class IngredientListView(ListAPIView):
         )
 
 
-# Получение ингредиента
 @require_GET
 def ingredient(request, ingredient_id):
     ingredient = Ingredient.objects.filter(id=ingredient_id).first()

@@ -24,7 +24,6 @@ class SubscribeView(APIView):
                 status=HTTPStatus.NOT_FOUND
             )
 
-        # Валидация подписки
         if Subscribtion.objects.filter(
             author=author,
             user=request.user
@@ -62,7 +61,6 @@ class SubscribeView(APIView):
                 status=HTTPStatus.NOT_FOUND
             )
 
-        # Удаление подписки
         deleted, _ = Subscribtion.objects.filter(
             author=author, user=request.user
         ).delete()
@@ -74,7 +72,6 @@ class SubscribeView(APIView):
         return HttpResponse(status=HTTPStatus.NO_CONTENT)
 
 
-# Получение списка подписок
 @api_view(["GET"])
 def subscribtions(request):
     subbed = User.objects.filter(
@@ -83,13 +80,11 @@ def subscribtions(request):
         )
     ).annotate(recipes_count=Count("recipes"))
 
-    # Пагинация
     paginator = UsersPagination()
     if request.GET.get("limit"):
         paginator.page_size = request.GET.get("limit")
     result_page = paginator.paginate_queryset(subbed, request)
 
-    # Сериализация
     serializer = UserWithRecipesSerializer(
         result_page, many=True, context={"request": request}
     )

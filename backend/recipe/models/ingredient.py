@@ -2,7 +2,6 @@ from django.conf import settings
 from django.db import models
 
 
-# Модель ингредиента
 class Ingredient(models.Model):
     name = models.CharField(max_length=settings.MAX_INGREDIENT_NAME_LENGTH)
     measurement_unit = models.CharField(

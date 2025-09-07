@@ -16,19 +16,16 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 
 
-# Работа с рецептами
 class RecipesView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
-    # Получение списка рецептов
     def get(self, request):
         request = auth_user(request)
 
         user = request.user
         recipes = Recipe.objects.all()
 
-        # Аннотации is_favorited и is_in_shopping_cart
         if user.is_authenticated:
             recipes = recipes.annotate(
                 is_favorited=Exists(Favorite.objects.filter(
@@ -42,17 +39,14 @@ class RecipesView(APIView):
                 is_in_shopping_cart=Exists(Cart.objects.none())
             )
 
-        # Фильтрация по автору
         author = request.GET.get("author")
         if author:
             recipes = recipes.filter(author=author)
 
-        # Фильтрация по тегам
         tags = request.GET.getlist("tags")
         if tags:
             recipes = recipes.filter(tags__slug__in=tags).distinct()
 
-        # Фильтрация по избранному
         if request.GET.get("is_favorited") == "1":
             if not user.is_authenticated:
                 return JsonResponse(
@@ -66,7 +60,6 @@ class RecipesView(APIView):
             )
             recipes = recipes.filter(id__in=favorites)
 
-        # Фильтрация по корзине
         if request.GET.get("is_in_shopping_cart") == "1":
             if not user.is_authenticated:
                 return JsonResponse(
@@ -78,10 +71,8 @@ class RecipesView(APIView):
             )
             recipes = recipes.filter(id__in=cart)
 
-        # Сортировка
         recipes = recipes.order_by("-id")
 
-        # Пагинация
         paginator = RecipePagination()
         if request.GET.get("limit"):
             paginator.page_size = request.GET.get("limit")
@@ -92,9 +83,7 @@ class RecipesView(APIView):
 
         return paginator.get_paginated_response(serializer.data)
 
-    # Создание рецепта
     def post(self, request):
-        # Аутенификация по токену
         auth = TokenAuthentication()
         user_auth_tuple = auth.authenticate(request)
         if not user_auth_tuple:
@@ -103,7 +92,6 @@ class RecipesView(APIView):
             )
         request.user, request.auth = user_auth_tuple
 
-        # Проверка разрешения
         if not IsAuthenticated().has_permission(request, self):
             return JsonResponse(
                 {"error": "Permission denied"}, status=HTTPStatus.UNAUTHORIZED
@@ -124,12 +112,10 @@ class RecipesView(APIView):
         )
 
 
-# Работа с конкретным рецептом
 class RecipeView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
-    # Получение конкретного рецепта
     def get_object(self, recipe_id, request):
         if request.user.is_authenticated:
             recipe = Recipe.objects.annotate(
@@ -152,7 +138,6 @@ class RecipeView(APIView):
             return recipe
         raise Http404("Recipe not found")
 
-    # Получение конкретного рецепта
     def get(self, request, recipe_id):
         request = auth_user(request)
 
@@ -162,17 +147,13 @@ class RecipeView(APIView):
             context={"request": request}
         ).data)
 
-    # Обновление конкретного рецепта
     def patch(self, request, recipe_id):
         return self._update_or_delete(request, recipe_id, method="PATCH")
 
-    # Удаление конкретного рецепта
     def delete(self, request, recipe_id):
         return self._update_or_delete(request, recipe_id, method="DELETE")
 
-    # Обновление или удаление конкретного рецепта
     def _update_or_delete(self, request, recipe_id, method):
-        # Получение токена
         auth = TokenAuthentication()
         try:
             user_auth_tuple = auth.authenticate(request)
@@ -185,13 +166,11 @@ class RecipeView(APIView):
 
         request.user, request.auth = user_auth_tuple
 
-        # Проверка авторизации
         if not IsAuthenticated().has_permission(request, self):
             return JsonResponse(
                 {"error": "Permission denied"}, status=HTTPStatus.UNAUTHORIZED
             )
 
-        # Проверка владельца
         recipe = self.get_object(recipe_id, request)
         if recipe.author != request.user:
             return JsonResponse(
@@ -199,7 +178,6 @@ class RecipeView(APIView):
                 status=HTTPStatus.FORBIDDEN
             )
 
-        # Обновление или удаление
         if method == "DELETE":
             recipe.delete()
             return HttpResponse(status=HTTPStatus.NO_CONTENT)

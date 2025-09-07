@@ -38,7 +38,6 @@ class User(AbstractUser):
         return self.email
 
 
-# Модель подписки
 class Subscribtion(models.Model):
     user = models.ForeignKey(
         User,

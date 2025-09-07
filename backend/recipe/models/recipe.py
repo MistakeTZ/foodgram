@@ -6,7 +6,6 @@ from recipe.models.tag import Tag
 from users.models import User
 
 
-# Модель рецепта
 class Recipe(models.Model):
     author = models.ForeignKey(
         User,
@@ -32,7 +31,6 @@ class Recipe(models.Model):
         return self.name
 
 
-# Модель ингредиента в рецепте
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE, related_name="recipe_ingredients"

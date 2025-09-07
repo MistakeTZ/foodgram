@@ -10,11 +10,9 @@ from users.models import User
 from users.serializers import UserPasswordUpdateSerializer
 
 
-# Логин пользователя
 @require_POST
 @csrf_exempt
 def login(request):
-    # Обработка невалидного JSON
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
@@ -23,7 +21,6 @@ def login(request):
             status=HTTPStatus.BAD_REQUEST
         )
 
-    # Проверка существования пользователя
     try:
         user = User.objects.get(email=data["email"])
     except User.DoesNotExist:
@@ -32,7 +29,6 @@ def login(request):
             status=HTTPStatus.BAD_REQUEST
         )
 
-    # Проверка пароля
     try:
         valid = user.check_password(data["password"])
 
@@ -44,25 +40,20 @@ def login(request):
             status=HTTPStatus.BAD_REQUEST
         )
 
-    # Генерация токена
     token, created = Token.objects.get_or_create(user=user)
     return JsonResponse({"auth_token": token.key}, status=HTTPStatus.OK)
 
 
-# Выход пользователя
 @api_view(["POST"])
 def logout(request):
-    # Удаление токена
     Token.objects.get(user=request.user).delete()
     return HttpResponse(status=HTTPStatus.NO_CONTENT)
 
 
-# Изменение пароля
 @api_view(["POST"])
 def set_password(request):
     user = request.user
 
-    # Обработка невалидного JSON
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:

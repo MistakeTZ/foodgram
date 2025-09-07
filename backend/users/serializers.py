@@ -22,14 +22,12 @@ class UserPasswordUpdateSerializer(serializers.Serializer):
         return instance
 
 
-# Сериализатор пользователя
 class UserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
     avatar = serializers.ImageField(use_url=True, read_only=True)
 
     class Meta:
         model = User
-        # Поля для сериализации
         fields = [
             "email",
             "id",
@@ -51,7 +49,6 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Username некорректный")
         return value
 
-    # Получение полей
     def get_is_subscribed(self, obj):
         if not self.context["request"].user.is_authenticated:
             return False

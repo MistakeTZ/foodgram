@@ -6,11 +6,9 @@ from django.http.response import JsonResponse
 from users.serializers import UserSerializer
 
 
-# Регистрация пользователя
 def register_user(request):
     field_errors = []
 
-    # Проверка валидности JSON
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
@@ -29,7 +27,6 @@ def register_user(request):
             status=HTTPStatus.BAD_REQUEST
         )
 
-    # Создание пользователя
     try:
         data = {
             "email": user.email,

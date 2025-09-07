@@ -15,19 +15,16 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from rest_framework.decorators import api_view
 
 
-# Изменение списка покупок
 @api_view(["POST", "DELETE"])
 def shopping_cart(request, recipe_id):
     recipe = Recipe.objects.filter(id=recipe_id).first()
 
-    # Проверка существования рецепта
     if not recipe:
         return JsonResponse(
             {"error": "Рецепт не найден"},
             status=HTTPStatus.NOT_FOUND
         )
 
-    # Добавление рецепта в список
     if request.method == "POST":
         try:
             Cart.objects.create(user=request.user, recipe=recipe)
@@ -40,7 +37,6 @@ def shopping_cart(request, recipe_id):
             ShortRecipeSerializer(recipe).data, status=HTTPStatus.CREATED
         )
 
-    # Удаление рецепта из списка
     if request.method == "DELETE":
         is_deleted = Cart.objects.filter(
             user=request.user, recipe=recipe).delete()
@@ -52,21 +48,16 @@ def shopping_cart(request, recipe_id):
         return HttpResponse(status=HTTPStatus.NO_CONTENT)
 
 
-# Скачивание списка покупок
 @api_view(["GET"])
 def download_shopping_cart(request):
-    # Получение списка ингредиентов
     cart = Cart.objects.filter(
         user=request.user).values_list("recipe_id", flat=True)
-    # TODO: Создавать объект нужно через сохранение сериалайзера,
-    # а не подобным образом вручную
     ingredients = RecipeIngredient.objects.filter(
         recipe_id__in=cart
     ).select_related(
         "ingredient", "recipe"
     )
 
-    # Группировка ингредиентов
     cart_ingredients = {}
     for ingredient in ingredients:
         ingredient = cart_ingredients.pop(
@@ -81,7 +72,6 @@ def download_shopping_cart(request):
 
         cart_ingredients[ingredient.id] = ingredient
 
-    # Генерация PDF
     pdf = gen_pdf(cart_ingredients.values())
     now = datetime.now(tz=timezone(timedelta(hours=3)))
     filename = f"cart-{now.strftime('%d-%m-%Y-%H-%M')}.pdf"
@@ -89,16 +79,13 @@ def download_shopping_cart(request):
     return FileResponse(pdf, as_attachment=True, filename=filename)
 
 
-# Генерация PDF
 def gen_pdf(ingredients):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer)
 
-    # Регистрация шрифта
     font_path = path.join("static", "fonts", "DejaVuSans.ttf")
     pdfmetrics.registerFont(TTFont("DejaVuSans", font_path))
 
-    # Создание документа
     styles = getSampleStyleSheet()
     style = styles["Normal"]
     style.fontName = "DejaVuSans"
@@ -107,7 +94,6 @@ def gen_pdf(ingredients):
     elements.append(Paragraph("Список ингредиентов:", style))
     elements.append(Spacer(1, 10))
 
-    # Добавление ингредиентов
     for i, ingredient in enumerate(ingredients):
         if i == len(ingredients) - 1:
             line = (

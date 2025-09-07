@@ -3,7 +3,6 @@ from django.db import models
 from slugify import slugify
 
 
-# Модель тега
 class Tag(models.Model):
     name = models.CharField(
         max_length=settings.MAX_TAG_NAME_LENGTH,

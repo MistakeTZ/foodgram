@@ -97,7 +97,6 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        # Поля, которые возвращаются сериализатором
         fields = [
             "id",
             "tags",
@@ -117,7 +116,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         ).data
 
 
-# Сериализатор пользователя с рецептами
 class UserWithRecipesSerializer(UserSerializer):
     recipes_count = serializers.IntegerField(read_only=True, default=0)
     recipes = ShortRecipeSerializer(many=True, read_only=True)

@@ -4,15 +4,12 @@ from os import path
 import json
 
 
-# Загрузка ингредиентов
 class Command(BaseCommand):
     help = "Загрузка ингредиентов"
 
     def handle(self, *args, **kwargs):
-        # Удаление всех ингредиентов
         Ingredient.objects.all().delete()
 
-        # Загрузка ингредиентов
         data_path = path.join(
             path.dirname(__file__),
             "../../../../data/ingredients.json"
@@ -23,7 +20,6 @@ class Command(BaseCommand):
             data = json.load(f)
 
         objs = [Ingredient(**item) for item in data]
-        # Игнорирование конфликтов
         Ingredient.objects.bulk_create(objs, ignore_conflicts=True)
 
         self.stdout.write(self.style.SUCCESS(

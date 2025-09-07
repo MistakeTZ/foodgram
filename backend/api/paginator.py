@@ -3,7 +3,6 @@ from django.http.response import JsonResponse
 from rest_framework.pagination import PageNumberPagination
 
 
-# Пагинация пользователей
 class UsersPagination(PageNumberPagination):
     page_size = settings.PAGINATE_COUNT
     page_size_query_param = "page_size"
@@ -20,7 +19,6 @@ class UsersPagination(PageNumberPagination):
         )
 
 
-# Пагинация рецептов
 class RecipePagination(PageNumberPagination):
     page_size = settings.PAGINATE_COUNT
     page_size_query_param = "page_size"

@@ -3,7 +3,6 @@ from recipe.models.recipe import RecipeIngredient
 from rest_framework import serializers
 
 
-# Сериализатор ингредиента
 class IngredientSerializer(serializers.ModelSerializer):
     amount = serializers.SerializerMethodField()
 
@@ -17,7 +16,6 @@ class IngredientSerializer(serializers.ModelSerializer):
         ).amount
 
 
-# Сериализатор ингредиента
 class IngredientSingleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient

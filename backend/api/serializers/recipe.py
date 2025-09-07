@@ -2,7 +2,7 @@ from rest_framework import serializers
 from recipe.models.recipe import Recipe
 from recipe.models.favorite import Favorite
 from recipe.models.cart import Cart
-from api.serializers.user import UserSerializer
+from users.serializers import UserSerializer
 from api.serializers.tag import TagSerializer
 from api.serializers.ingredient import IngredientSerializer
 

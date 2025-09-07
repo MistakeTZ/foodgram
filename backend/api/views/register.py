@@ -1,7 +1,6 @@
 from django.http.response import JsonResponse
-from users.models import User
 from django.db import IntegrityError
-import re
+from users.serializers import UserSerializer
 import json
 
 
@@ -15,82 +14,16 @@ def register_user(request):
     except json.JSONDecodeError:
         return JsonResponse({"field_name": ["Invalid JSON"]}, status=400)
 
-    # Проверка email
-    try:
-        email = data["email"]
-        valid = re.compile(
-            r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
-
-        if not valid.match(email):
-            raise ValueError("Некорректный email")
-
-        if len(email) > 254:
-            raise ValueError("Email слишком длинный")
-    except ValueError or TypeError or KeyError:
-        field_errors.append("Некорректный email")
-
-    # Проверка username
-    try:
-        username = data["username"]
-        valid = re.compile(r"^[\w.@+-]+\Z")
-
-        if not valid.match(username):
-            raise ValueError("Username некорректный")
-        if len(username) > 150:
-            raise ValueError("Username слишком длинный")
-    except ValueError or TypeError or KeyError:
-        field_errors.append("Некорректный username")
-
-    # Проверка имени
-    try:
-        first_name = data["first_name"]
-
-        if len(first_name) > 150:
-            raise ValueError("Имя слишком длинное")
-    except ValueError or KeyError:
-        field_errors.append("Некорректное имя")
-
-    # Проверка фамилии
-    try:
-        last_name = data["last_name"]
-
-        if len(last_name) > 150:
-            raise ValueError("Фамилия слишком длинная")
-    except ValueError or KeyError:
-        field_errors.append("Некорректная фамилия")
-
-    # Проверка пароля
-    try:
-        password = data["password"]
-
-        if len(password) > 128:
-            raise ValueError("Пароль слишком длинный")
-        if len(password) < 8:
-            raise ValueError("Пароль слишком короткий")
-        if not re.search("[a-z]", password):
-            if not re.search("[A-Z]", password):
-                raise ValueError("Пароль должен содержать букву")
-        if not re.search("[0-9]", password):
-            raise ValueError("Пароль должен содержать цифру")
-    except ValueError as e:
-        field_errors.append(str(e))
-    except TypeError:
-        field_errors.append("Некорректный пароль")
-
-    # Возврат ошибкок
-    if field_errors:
+    serializer = UserSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+    else:
+        field_errors = [
+            str(field[0]) for field in serializer.errors.values()]
         return JsonResponse({"field_name": field_errors}, status=400)
 
     # Создание пользователя
     try:
-        user = User.objects.create_user(
-            email=email,
-            username=username,
-            first_name=first_name,
-            last_name=last_name,
-            password=password
-        )
-
         data = {
             "email": user.email,
             "id": user.id,

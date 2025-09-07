@@ -1,11 +1,11 @@
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from users.models import User
-from .register import register_user
+from api.views.register import register_user
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.generics import ListAPIView
-from api.serializers.user import UserSerializer
+from users.serializers import UserSerializer
 from api.paginator import UsersPagination
 
 
@@ -16,7 +16,6 @@ class UserListView(ListAPIView):
 
     # Получение списка пользователей
     def get(self, request):
-        print(1)
         paginator = UsersPagination()
         paginator.page_size = 10
         queryset = User.objects.all()

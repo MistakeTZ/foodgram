@@ -7,7 +7,7 @@ from recipe.paginator import RecipePagination
 from api.serializers.recipe import RecipeSerializer
 from django.core.files.base import ContentFile
 from django.shortcuts import redirect
-from . import validators
+from recipe import validators
 import json
 import base64
 from uuid import uuid4

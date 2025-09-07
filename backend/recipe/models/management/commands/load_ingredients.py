@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from ...models.ingredient import Ingredient
+from recipe.models.ingredient import Ingredient
 from os import path
 import json
 

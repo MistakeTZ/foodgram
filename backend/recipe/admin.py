@@ -1,5 +1,5 @@
 from django.contrib import admin
-from . import models
+from recipe import models
 
 # Регистрация тега
 admin.site.register(models.tag.Tag)

@@ -1,17 +1,19 @@
 from http import HTTPStatus
 
-from api.serializers.recipe import RecipeSerializer
+from api.serializers.recipe import (
+    RecipeSerializer, RecipeCreateUpdateSerializer
+)
 from django.db.models import Exists, OuterRef
 from django.http import HttpResponse, JsonResponse
 from django.http.response import Http404
+from django.shortcuts import redirect
 from recipe.models.recipe import Recipe
 from recipe.models.recipe_user_model import Favorite, Cart
-from recipe.recipes import create_recipe, get_recipes, update_recipe
+from api.paginator import RecipePagination
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
-from users.auth import auth_user
 
 
 # Работа с рецептами
@@ -23,8 +25,72 @@ class RecipesView(APIView):
     def get(self, request):
         request = auth_user(request)
 
-        # Получение списка рецептов
-        return get_recipes(request)
+        user = request.user
+        recipes = Recipe.objects.all()
+
+        # Аннотации is_favorited и is_in_shopping_cart
+        if user.is_authenticated:
+            recipes = recipes.annotate(
+                is_favorited=Exists(Favorite.objects.filter(
+                    user=user, recipe=OuterRef('pk'))),
+                is_in_shopping_cart=Exists(Cart.objects.filter(
+                    user=user, recipe=OuterRef('pk')))
+            )
+        else:
+            recipes = recipes.annotate(
+                is_favorited=Exists(Favorite.objects.none()),
+                is_in_shopping_cart=Exists(Cart.objects.none())
+            )
+
+        # Фильтрация по автору
+        author = request.GET.get("author")
+        if author:
+            recipes = recipes.filter(author=author)
+
+        # Фильтрация по тегам
+        tags = request.GET.getlist("tags")
+        if tags:
+            recipes = recipes.filter(tags__slug__in=tags).distinct()
+
+        # Фильтрация по избранному
+        if request.GET.get("is_favorited") == "1":
+            if not user.is_authenticated:
+                return JsonResponse(
+                    {"error": "Вы не авторизованы"},
+                    status=HTTPStatus.UNAUTHORIZED
+                )
+            favorites = Favorite.objects.filter(
+                user=request.user
+            ).values_list(
+                "recipe_id", flat=True
+            )
+            recipes = recipes.filter(id__in=favorites)
+
+        # Фильтрация по корзине
+        if request.GET.get("is_in_shopping_cart") == "1":
+            if not user.is_authenticated:
+                return JsonResponse(
+                    {"error": "Вы не авторизованы"},
+                    status=HTTPStatus.UNAUTHORIZED
+                )
+            cart = Cart.objects.filter(user=request.user).values_list(
+                "recipe_id", flat=True
+            )
+            recipes = recipes.filter(id__in=cart)
+
+        # Сортировка
+        recipes = recipes.order_by("-id")
+
+        # Пагинация
+        paginator = RecipePagination()
+        if request.GET.get("limit"):
+            paginator.page_size = request.GET.get("limit")
+
+        paginated = paginator.paginate_queryset(recipes, request)
+        serializer = RecipeSerializer(
+            paginated, many=True, context={"request": request})
+
+        return paginator.get_paginated_response(serializer.data)
 
     # Создание рецепта
     def post(self, request):
@@ -43,8 +109,19 @@ class RecipesView(APIView):
                 {"error": "Permission denied"}, status=HTTPStatus.UNAUTHORIZED
             )
 
-        # Создание рецепта
-        return create_recipe(request)
+        serializer = RecipeCreateUpdateSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            recipe = serializer.save()
+            return redirect("recipe", recipe.id)
+
+        field_errors = [str(field[0]) for field in serializer.errors.values()]
+        return JsonResponse(
+            {"field_name": field_errors},
+            status=HTTPStatus.BAD_REQUEST
+        )
 
 
 # Работа с конкретным рецептом
@@ -72,7 +149,6 @@ class RecipeView(APIView):
             ).filter(id=recipe_id).first()
 
         if recipe:
-            print(recipe.is_favorited)
             return recipe
         raise Http404("Recipe not found")
 
@@ -128,4 +204,33 @@ class RecipeView(APIView):
             recipe.delete()
             return HttpResponse(status=HTTPStatus.NO_CONTENT)
         elif method == "PATCH":
-            return update_recipe(request, recipe)
+            serializer = RecipeCreateUpdateSerializer(
+                recipe,
+                data=request.data,
+                partial=True
+            )
+            if serializer.is_valid():
+                recipe = serializer.save()
+                output = RecipeSerializer(
+                    recipe, context={'request': request}
+                ).data
+                return JsonResponse(output)
+
+            field_errors = [str(field[0])
+                            for field in serializer.errors.values()]
+            return JsonResponse(
+                {"field_name": field_errors},
+                status=HTTPStatus.BAD_REQUEST
+            )
+
+
+def auth_user(request):
+    auth = TokenAuthentication()
+    try:
+        user_auth_tuple = auth.authenticate(request)
+        if user_auth_tuple:
+            request.user, request.auth = user_auth_tuple
+    except AuthenticationFailed:
+        pass
+    finally:
+        return request

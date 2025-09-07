@@ -3,10 +3,11 @@ from http import HTTPStatus
 from api.paginator import UsersPagination
 from api.views.register import register_user
 from django.http.response import JsonResponse
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from users.auth import auth_user
 from users.models import User
 from users.serializers import UserSerializer
 
@@ -60,7 +61,18 @@ class UserView(APIView):
 # Получение моего профиля
 class MeView(APIView):
     def get(self, request):
-        print(request.user)
         return JsonResponse(
             UserSerializer(request.user, context={"request": request}).data
         )
+
+
+def auth_user(request):
+    auth = TokenAuthentication()
+    try:
+        user_auth_tuple = auth.authenticate(request)
+        if user_auth_tuple:
+            request.user, request.auth = user_auth_tuple
+    except AuthenticationFailed:
+        request.user, request.auth = None, None
+    finally:
+        return request

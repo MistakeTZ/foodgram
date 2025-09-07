@@ -2,6 +2,8 @@ from django.db import models
 from users.models import User
 from recipe.models.tag import Tag
 from recipe.models.ingredient import Ingredient
+from django.core.validators import MinValueValidator
+from django.conf import settings
 
 
 # Модель рецепта
@@ -11,13 +13,16 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         related_name='recipes'
     )
-    title = models.CharField(max_length=100)
+    title = models.CharField(max_length=settings.MAX_RECIPE_TITLE_LENGTH)
     image = models.ImageField(upload_to='images/recipes/')
     description = models.TextField()
     ingredients = models.ManyToManyField(
         Ingredient, through='RecipeIngredient')
     tags = models.ManyToManyField(Tag)
-    cooking_time = models.IntegerField()
+    cooking_time = models.SmallIntegerField(
+        validators=[MinValueValidator(1)],
+        help_text='Время приготовления в минутах'
+    )
 
     class Meta:
         verbose_name = 'Рецепт'
@@ -39,7 +44,7 @@ class RecipeIngredient(models.Model):
         on_delete=models.CASCADE,
         related_name='recipe_ingredients'
     )
-    amount = models.IntegerField()
+    amount = models.SmallAutoField(validators=[MinValueValidator(1)])
 
     class Meta:
         verbose_name = 'Ингредиент в рецепте'

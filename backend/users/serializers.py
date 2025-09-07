@@ -56,14 +56,6 @@ class UserSerializer(serializers.ModelSerializer):
             return obj.avatar.url
         return None
 
-    # def get_recipes_count(self, obj):
-    #     recipes = Recipe.objects.filter(author=obj)
-    #     return recipes.count()
-
-    # def get_recipes(self, obj):
-    #     recipes = Recipe.objects.filter(author=obj)
-    #     return ShortRecipeSerializer(recipes, many=True).data
-
 
 def password_validation(value):
     if len(value) > 128:

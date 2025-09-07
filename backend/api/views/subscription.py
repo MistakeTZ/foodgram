@@ -5,6 +5,7 @@ from api.serializers.recipe import UserWithRecipesSerializer
 from rest_framework.decorators import api_view
 from api.paginator import UsersPagination
 from django.db.models import Count
+from django.conf import settings
 
 
 # Создание/удаление подписки
@@ -57,7 +58,8 @@ def subscribtions(request):
 
     # Пагинация
     paginator = UsersPagination()
-    paginator.page_size = 10
+    if request.GET.get("limit"):
+        paginator.page_size = request.GET.get("limit")
     result_page = paginator.paginate_queryset(subbed, request)
 
     # Сериализация

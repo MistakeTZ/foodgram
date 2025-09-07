@@ -91,6 +91,9 @@ def get_recipes(request):
 
     # Пагинация
     paginator = RecipePagination()
+    if request.GET.get('limit'):
+        paginator.page_size = request.GET.get('limit')
+
     recipes = paginator.paginate_queryset(recipes, request)
 
     return paginator.get_paginated_response(RecipeSerializer(

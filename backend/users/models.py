@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.conf import settings
 
 
 def user_avatar_path(instance, filename):
@@ -9,7 +10,7 @@ def user_avatar_path(instance, filename):
 
 class User(AbstractUser):
     username = models.CharField(
-        max_length=150,
+        max_length=settings.MAX_USERNAME_LENGTH,
         unique=True,
         validators=[AbstractUser.username_validator],
         error_messages={
@@ -19,11 +20,11 @@ class User(AbstractUser):
     email = models.EmailField(
         _("email address"),
         unique=True,
-        max_length=254,
+        max_length=settings.MAX_EMAIL_LENGTH,
     )
-    first_name = models.CharField(max_length=150)
-    last_name = models.CharField(max_length=150)
-    password = models.CharField(max_length=254)
+    first_name = models.CharField(max_length=settings.MAX_FIRST_NAME_LENGTH)
+    last_name = models.CharField(max_length=settings.MAX_LAST_NAME_LENGTH)
+    password = models.CharField(max_length=settings.MAX_PASSWORD_LENGTH)
     avatar = models.ImageField(upload_to=user_avatar_path, blank=True)
 
     USERNAME_FIELD = "email"

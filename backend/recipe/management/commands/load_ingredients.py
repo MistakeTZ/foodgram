@@ -2,7 +2,7 @@ import json
 import pathlib
 
 from django.core.management.base import BaseCommand
-from recipe.models.ingredient import Ingredient
+from recipe.models import Ingredient
 
 
 class Command(BaseCommand):
@@ -13,7 +13,7 @@ class Command(BaseCommand):
 
         data_path = pathlib.Path(
             pathlib.Path(__file__),
-            "../../../../data/ingredients.json"
+            "../../../data/ingredients.json"
         )
 
         with open(data_path, encoding="utf-8") as f:

@@ -1,6 +1,6 @@
 import django_filters
 from django.db.models import Case, IntegerField, Value, When
-from recipe.models.ingredient import Ingredient
+from recipe.models import Ingredient
 
 
 class IngredientFilter(django_filters.FilterSet):

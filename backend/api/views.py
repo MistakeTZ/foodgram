@@ -31,10 +31,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django_filters.rest_framework import DjangoFilterBackend
-from recipe.models.ingredient import Ingredient
-from recipe.models.recipe import Recipe, RecipeIngredient
-from recipe.models.recipe_user_model import Cart, Favorite
-from recipe.models.tag import Tag
+from recipe.models import Cart, Favorite, Ingredient, Recipe, RecipeIngredient, Tag
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont

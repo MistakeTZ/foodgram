@@ -5,10 +5,7 @@ from uuid import uuid4
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
-from recipe.models.ingredient import Ingredient
-from recipe.models.recipe import Recipe, RecipeIngredient
-from recipe.models.recipe_user_model import Cart, Favorite
-from recipe.models.tag import Tag
+from recipe.models import Cart, Favorite, Ingredient, Recipe, RecipeIngredient, Tag
 from rest_framework import serializers
 from users.models import Subscribtion, User
 

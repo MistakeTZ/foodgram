@@ -1,7 +1,6 @@
 from pathlib import Path
 from os import getenv
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = getenv("DJANGO_SECRET_KEY", "fallback-secret-key")
@@ -72,10 +71,6 @@ REST_FRAMEWORK = {
 
 WSGI_APPLICATION = 'app.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     "default": {
         # "ENGINE": "django.db.backends.postgresql",
@@ -90,9 +85,6 @@ DATABASES = {
 }
 
 AUTH_USER_MODEL = "users.User"
-
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -109,10 +101,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Europe/Moscow'
@@ -121,10 +109,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = 'back_static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -132,23 +116,6 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
-
-# Constants
-PAGINATE_COUNT = 10
-MAX_PAGE_SIZE = 100
-MAX_INGREDIENT_NAME_LENGTH = 100
-MAX_MEASUREMENT_UNIT_LENGTH = 100
-MAX_RECIPE_TITLE_LENGTH = 100
-MAX_TAG_NAME_LENGTH = 100
-MAX_TAG_SLUG_LENGTH = 100
-MAX_USERNAME_LENGTH = 150
-MAX_EMAIL_LENGTH = 254
-MAX_FIRST_NAME_LENGTH = 150
-MAX_LAST_NAME_LENGTH = 150
-MAX_PASSWORD_LENGTH = 254

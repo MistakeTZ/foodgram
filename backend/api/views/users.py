@@ -5,14 +5,14 @@ from api.views.register import register_user
 from django.http.response import JsonResponse
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from users.models import User
 from users.serializers import UserSerializer
+from app import constants
 
 
-class UserListView(ListAPIView):
+class UserListView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
@@ -20,7 +20,8 @@ class UserListView(ListAPIView):
         request = auth_user(request)
 
         paginator = PagePagination()
-        paginator.page_size = 10
+        paginator.page_size = request.GET.get(
+            "limit", constants.PAGINATE_COUNT)
         queryset = User.objects.all()
 
         result_page = paginator.paginate_queryset(queryset, request)

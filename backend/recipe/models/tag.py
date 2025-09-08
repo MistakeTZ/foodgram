@@ -1,16 +1,16 @@
-from django.conf import settings
+from app import constants
 from django.db import models
 from slugify import slugify
 
 
 class Tag(models.Model):
     name = models.CharField(
-        max_length=settings.MAX_TAG_NAME_LENGTH,
+        max_length=constants.MAX_TAG_NAME_LENGTH,
         unique=True,
         verbose_name="Название"
     )
     slug = models.SlugField(
-        max_length=settings.MAX_TAG_SLUG_LENGTH,
+        max_length=constants.MAX_TAG_SLUG_LENGTH,
         unique=True,
         blank=True,
         verbose_name="Слаг"

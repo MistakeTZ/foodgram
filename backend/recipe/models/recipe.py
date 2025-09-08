@@ -1,4 +1,4 @@
-from django.conf import settings
+from app import constants
 from django.core.validators import MinValueValidator
 from django.db import models
 from recipe.models.ingredient import Ingredient
@@ -12,7 +12,7 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         related_name="recipes"
     )
-    name = models.CharField(max_length=settings.MAX_RECIPE_TITLE_LENGTH)
+    name = models.CharField(max_length=constants.MAX_RECIPE_TITLE_LENGTH)
     image = models.ImageField(upload_to="images/recipes/")
     text = models.TextField()
     ingredients = models.ManyToManyField(

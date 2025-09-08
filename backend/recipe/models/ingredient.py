@@ -1,14 +1,14 @@
-from django.conf import settings
+from app import constants
 from django.db import models
 
 
 class Ingredient(models.Model):
     name = models.CharField(
-        max_length=settings.MAX_INGREDIENT_NAME_LENGTH,
+        max_length=constants.MAX_INGREDIENT_NAME_LENGTH,
         verbose_name="Название ингредиента"
     )
     measurement_unit = models.CharField(
-        max_length=settings.MAX_MEASUREMENT_UNIT_LENGTH,
+        max_length=constants.MAX_MEASUREMENT_UNIT_LENGTH,
         verbose_name="Единица измерения"
     )
 

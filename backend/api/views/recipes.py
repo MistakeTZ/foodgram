@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from api.serializers.recipe import (
+from api.serializers import (
     RecipeSerializer, RecipeCreateUpdateSerializer
 )
 from django.db.models import Exists, OuterRef
@@ -9,7 +9,7 @@ from django.http.response import Http404
 from django.shortcuts import redirect
 from recipe.models.recipe import Recipe
 from recipe.models.recipe_user_model import Favorite, Cart
-from api.paginator import RecipePagination
+from api.paginator import PagePagination
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -73,7 +73,7 @@ class RecipesView(APIView):
 
         recipes = recipes.order_by("-id")
 
-        paginator = RecipePagination()
+        paginator = PagePagination()
         if request.GET.get("limit"):
             paginator.page_size = request.GET.get("limit")
 

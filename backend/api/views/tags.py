@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from api.serializers.tag import TagSerializer
+from api.serializers import TagSerializer
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from recipe.models.tag import Tag

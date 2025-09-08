@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from api.paginator import UsersPagination
+from api.paginator import PagePagination
 from api.views.register import register_user
 from django.http.response import JsonResponse
 from rest_framework.authentication import TokenAuthentication
@@ -19,7 +19,7 @@ class UserListView(ListAPIView):
     def get(self, request):
         request = auth_user(request)
 
-        paginator = UsersPagination()
+        paginator = PagePagination()
         paginator.page_size = 10
         queryset = User.objects.all()
 

@@ -1,8 +1,7 @@
 from http import HTTPStatus
 
-from api.paginator import UsersPagination
-from api.serializers.recipe import UserWithRecipesSerializer
-from api.serializers.subscription import SubscribtionSerializer
+from api.paginator import PagePagination
+from api.serializers import SubscribtionSerializer, UserWithRecipesSerializer
 from django.db.models import Count
 from django.http.response import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
@@ -80,7 +79,7 @@ def subscribtions(request):
         )
     ).annotate(recipes_count=Count("recipes"))
 
-    paginator = UsersPagination()
+    paginator = PagePagination()
     if request.GET.get("limit"):
         paginator.page_size = request.GET.get("limit")
     result_page = paginator.paginate_queryset(subbed, request)

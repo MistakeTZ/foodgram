@@ -1,37 +1,27 @@
 from http import HTTPStatus
 
-from api.serializers.ingredient import IngredientSingleSerializer
+from api.serializers import IngredientSingleSerializer
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from recipe.models.ingredient import Ingredient
 from rest_framework.permissions import AllowAny
 from rest_framework.generics import ListAPIView
-from django.db.models import Case, When, Value, IntegerField
+from api.filters import IngredientFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
 
 
 class IngredientListView(ListAPIView):
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSingleSerializer
     permission_classes = [AllowAny]
     authentication_classes = []
-    serializer_class = IngredientSingleSerializer
     pagination_class = None
 
-    def get_queryset(self):
-        name = self.request.query_params.get("name")
-        qs = Ingredient.objects.all()
-        if not name:
-            return qs
-        return (
-            qs.filter(name__icontains=name)
-            .annotate(
-                rank=Case(
-                    When(name__istartswith=name, then=Value(0)),
-                    When(name__icontains=name, then=Value(1)),
-                    default=Value(2),
-                    output_field=IntegerField()
-                )
-            )
-            .order_by('rank', 'name')
-        )
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = IngredientFilter
+    ordering_fields = ['name']
+    ordering = ['name']
 
 
 @require_GET

@@ -1,7 +1,7 @@
 import io
-from datetime import datetime, timedelta, timezone
 from os import path
 
+from django.utils import timezone
 from recipe.models.recipe import RecipeIngredient
 from recipe.models.recipe_user_model import Cart
 from reportlab.lib.styles import getSampleStyleSheet
@@ -9,7 +9,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from rest_framework.decorators import api_view
-from api.serializers.user_recipe_serializer import CartSerializer
+from api.serializers import CartSerializer
 from api.views.user_reciepe_relation import handle_user_recipe_relation
 from django.http import FileResponse
 
@@ -49,7 +49,7 @@ def download_shopping_cart(request):
         cart_ingredients[ingredient.id] = ingredient
 
     pdf = gen_pdf(cart_ingredients.values())
-    now = datetime.now(tz=timezone(timedelta(hours=3)))
+    now = timezone.now()
     filename = f"cart-{now.strftime('%d-%m-%Y-%H-%M')}.pdf"
 
     return FileResponse(pdf, as_attachment=True, filename=filename)

@@ -7,7 +7,7 @@ from django.views.decorators.http import require_POST
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view
 from users.models import User
-from users.serializers import UserPasswordUpdateSerializer
+from api.serializers import UserPasswordUpdateSerializer
 
 
 @require_POST

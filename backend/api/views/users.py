@@ -8,7 +8,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from users.models import User
-from users.serializers import UserSerializer
+from api.serializers import UserSerializer
 from app import constants
 
 

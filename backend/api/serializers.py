@@ -3,11 +3,75 @@ from users.models import Subscribtion, User
 from uuid import uuid4
 import base64
 from django.core.files.base import ContentFile
-from users.serializers import UserSerializer
 from recipe.models.tag import Tag
 from recipe.models.recipe import Recipe, RecipeIngredient
 from recipe.models.ingredient import Ingredient
 from rest_framework import serializers
+import re
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.password_validation import validate_password
+
+
+class UserPasswordUpdateSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+
+    def validate_current_password(self, value):
+        user = self.instance
+        if not user.check_password(value):
+            raise serializers.ValidationError("Текущий пароль указан неверно.")
+        return value
+
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
+
+    def update(self, instance, validated_data):
+        instance.set_password(
+            make_password(validated_data["new_password"])
+        )
+        instance.save(update_fields=["password"])
+        return instance
+
+
+class UserSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+    avatar = serializers.ImageField(use_url=True, read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "email",
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "is_subscribed",
+            "password",
+            "avatar",
+        ]
+
+    def validate_username(self, value):
+        valid = re.compile(r"^[\w.@+-]+\Z")
+
+        if not valid.match(value):
+            raise serializers.ValidationError("Username некорректный")
+        return value
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value
+
+    def get_is_subscribed(self, obj):
+        if not self.context["request"].user.is_authenticated:
+            return False
+        return Subscribtion.objects.filter(
+            author=obj, user=self.context["request"].user
+        ).exists()
+
+    def create(self, validated_data):
+        validated_data["password"] = make_password(validated_data["password"])
+        return super().create(validated_data)
 
 
 class TagSerializer(serializers.ModelSerializer):

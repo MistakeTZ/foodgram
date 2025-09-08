@@ -3,7 +3,7 @@ from http import HTTPStatus
 
 from django.db import IntegrityError
 from django.http.response import JsonResponse
-from users.serializers import UserSerializer
+from api.serializers import UserSerializer
 
 
 def register_user(request):

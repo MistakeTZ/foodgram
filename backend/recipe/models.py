@@ -53,17 +53,28 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="recipes"
+        related_name="recipes",
+        verbose_name="Автор",
     )
-    name = models.CharField(max_length=constants.MAX_RECIPE_TITLE_LENGTH)
-    image = models.ImageField(upload_to="images/recipes/")
-    text = models.TextField()
+    name = models.CharField(
+        max_length=constants.MAX_RECIPE_TITLE_LENGTH,
+        verbose_name="Название"
+    )
+    image = models.ImageField(
+        upload_to="images/recipes/",
+        verbose_name="Изображение"
+    )
+    text = models.TextField(verbose_name="Описание")
     ingredients = models.ManyToManyField(
-        Ingredient, through="RecipeIngredient")
-    tags = models.ManyToManyField(Tag)
-    cooking_time = models.SmallIntegerField(
+        Ingredient,
+        through="RecipeIngredient",
+        verbose_name="Ингредиенты"
+    )
+    tags = models.ManyToManyField(Tag, verbose_name="Теги")
+    cooking_time = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1)],
-        help_text="Время приготовления в минутах"
+        help_text="Время приготовления в минутах",
+        verbose_name="Время приготовления"
     )
 
     class Meta:
@@ -78,13 +89,11 @@ class UserRecipeRelation(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="user_recipe_relation",
         verbose_name="Пользователь",
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name="user_recipe_relation",
         verbose_name="Рецепт",
     )
 
@@ -102,19 +111,6 @@ class UserRecipeRelation(models.Model):
 
 
 class Favorite(UserRecipeRelation):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="favorites",
-        verbose_name="Пользователь",
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        related_name="in_favorites",
-        verbose_name="Рецепт",
-    )
-
     class Meta:
         verbose_name = "Избранное"
         verbose_name_plural = "Избранные рецепты"
@@ -127,19 +123,6 @@ class Favorite(UserRecipeRelation):
 
 
 class Cart(UserRecipeRelation):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="cart",
-        verbose_name="Пользователь",
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        related_name="in_carts",
-        verbose_name="Рецепт",
-    )
-
     class Meta:
         verbose_name = "Корзина"
         verbose_name_plural = "Список покупок"
@@ -164,7 +147,7 @@ class RecipeIngredient(models.Model):
         related_name="recipe_ingredients",
         verbose_name="Ингредиент",
     )
-    amount = models.SmallIntegerField(
+    amount = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1)],
         verbose_name="Количество",
     )

@@ -15,29 +15,32 @@ from api.serializers import (
     ShortRecipeSerializer,
     SubscribtionSerializer,
     TagSerializer,
-    UserPasswordUpdateSerializer,
     UserSerializer,
     UserWithRecipesSerializer,
 )
 from app import constants
 from django.db import IntegrityError
 from django.db.models import Count, Exists, OuterRef
-from django.db.utils import IntegrityError
-from django.http import FileResponse, HttpResponse, JsonResponse
-from django.http.response import Http404, HttpResponse, JsonResponse
+from django.http import Http404, FileResponse, HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET
 from django_filters.rest_framework import DjangoFilterBackend
-from recipe.models import Cart, Favorite, Ingredient, Recipe, RecipeIngredient, Tag
+from recipe.models import (
+    Cart,
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    Tag
+)
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.generics import ListAPIView
@@ -205,73 +208,6 @@ def get_link(request, recipe_id):
             reverse("short_link", args=[link]))},
         status=200,
     )
-
-
-@require_POST
-@csrf_exempt
-def login(request):
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse(
-            {"error": "Invalid JSON"},
-            status=HTTPStatus.BAD_REQUEST
-        )
-
-    try:
-        user = User.objects.get(email=data["email"])
-    except User.DoesNotExist:
-        return JsonResponse(
-            {"error": "User does not exist"},
-            status=HTTPStatus.BAD_REQUEST
-        )
-
-    try:
-        valid = user.check_password(data["password"])
-
-        if not valid:
-            raise ValueError
-    except ValueError:
-        return JsonResponse(
-            {"error": "Неверный пароль"},
-            status=HTTPStatus.BAD_REQUEST
-        )
-
-    token, created = Token.objects.get_or_create(user=user)
-    return JsonResponse({"auth_token": token.key}, status=HTTPStatus.OK)
-
-
-@api_view(["POST"])
-def logout(request):
-    Token.objects.get(user=request.user).delete()
-    return HttpResponse(status=HTTPStatus.NO_CONTENT)
-
-
-@api_view(["POST"])
-def set_password(request):
-    user = request.user
-
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse(
-            {"field_name": ["Invalid JSON"]}, status=HTTPStatus.BAD_REQUEST
-        )
-
-    serializer = UserPasswordUpdateSerializer(user, data=data)
-    if serializer.is_valid():
-        serializer.save()
-    else:
-        return JsonResponse(
-            {
-                "field_name": [
-                    str(field[0]) for field in list(serializer.errors.values())
-                ]
-            },
-            status=HTTPStatus.BAD_REQUEST,
-        )
-
-    return HttpResponse(status=HTTPStatus.NO_CONTENT)
 
 
 class RecipesView(APIView):
@@ -656,18 +592,6 @@ class MeView(APIView):
         return JsonResponse(
             UserSerializer(request.user, context={"request": request}).data
         )
-
-
-def auth_user(request):
-    auth = TokenAuthentication()
-    try:
-        user_auth_tuple = auth.authenticate(request)
-        if user_auth_tuple:
-            request.user, request.auth = user_auth_tuple
-    except AuthenticationFailed:
-        request.user, request.auth = None, None
-    finally:
-        return request
 
 
 def handle_user_recipe_relation(request, recipe_id, serializer_class,

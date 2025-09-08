@@ -1,14 +1,19 @@
 from api import views
 from django.urls import path
+from djoser.views import TokenCreateView, TokenDestroyView, UserViewSet
 
 urlpatterns = [
     path("users/<int:user_id>/", views.UserView.as_view(), name="user"),
     path("users/me/", views.MeView.as_view(), name="me"),
     path("users/me/avatar/", views.avatar, name="avatar"),
     path("users/", views.UserListView.as_view(), name="users"),
-    path("users/set_password/", views.set_password, name="set_password"),
-    path("auth/token/login/", views.login, name="login"),
-    path("auth/token/logout/", views.logout, name="logout"),
+    path(
+        "users/set_password/",
+        UserViewSet.as_view({"post": "set_password"}),
+        name="set_password"
+    ),
+    path("auth/token/login/", TokenCreateView.as_view(), name="login"),
+    path("auth/token/logout/", TokenDestroyView.as_view(), name="logout"),
     path(
         "users/subscriptions/",
         views.subscribtions,

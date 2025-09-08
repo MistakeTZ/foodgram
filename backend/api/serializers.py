@@ -5,31 +5,16 @@ from uuid import uuid4
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
-from recipe.models import Cart, Favorite, Ingredient, Recipe, RecipeIngredient, Tag
+from recipe.models import (
+    Cart,
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    Tag
+)
 from rest_framework import serializers
 from users.models import Subscribtion, User
-
-
-class UserPasswordUpdateSerializer(serializers.Serializer):
-    current_password = serializers.CharField(write_only=True)
-    new_password = serializers.CharField(write_only=True)
-
-    def validate_current_password(self, value):
-        user = self.instance
-        if not user.check_password(value):
-            raise serializers.ValidationError("Текущий пароль указан неверно.")
-        return value
-
-    def validate_new_password(self, value):
-        validate_password(value)
-        return value
-
-    def update(self, instance, validated_data):
-        instance.set_password(
-            make_password(validated_data["new_password"])
-        )
-        instance.save(update_fields=["password"])
-        return instance
 
 
 class UserSerializer(serializers.ModelSerializer):

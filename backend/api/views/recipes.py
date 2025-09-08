@@ -1,15 +1,13 @@
 from http import HTTPStatus
 
-from api.serializers import (
-    RecipeSerializer, RecipeCreateUpdateSerializer
-)
+from api.paginator import PagePagination
+from api.serializers import RecipeCreateUpdateSerializer, RecipeSerializer
 from django.db.models import Exists, OuterRef
 from django.http import HttpResponse, JsonResponse
 from django.http.response import Http404
 from django.shortcuts import redirect
 from recipe.models.recipe import Recipe
-from recipe.models.recipe_user_model import Favorite, Cart
-from api.paginator import PagePagination
+from recipe.models.recipe_user_model import Cart, Favorite
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -29,9 +27,9 @@ class RecipesView(APIView):
         if user.is_authenticated:
             recipes = recipes.annotate(
                 is_favorited=Exists(Favorite.objects.filter(
-                    user=user, recipe=OuterRef('pk'))),
+                    user=user, recipe=OuterRef("pk"))),
                 is_in_shopping_cart=Exists(Cart.objects.filter(
-                    user=user, recipe=OuterRef('pk')))
+                    user=user, recipe=OuterRef("pk")))
             )
         else:
             recipes = recipes.annotate(
@@ -99,7 +97,7 @@ class RecipesView(APIView):
 
         serializer = RecipeCreateUpdateSerializer(
             data=request.data,
-            context={'request': request}
+            context={"request": request}
         )
         if serializer.is_valid():
             recipe = serializer.save()
@@ -121,11 +119,11 @@ class RecipeView(APIView):
             recipe = Recipe.objects.annotate(
                 is_in_shopping_cart=Exists(
                     Cart.objects.filter(user=request.user,
-                                        recipe=OuterRef('pk'))
+                                        recipe=OuterRef("pk"))
                 ),
                 is_favorited=Exists(
                     Favorite.objects.filter(
-                        user=request.user, recipe=OuterRef('pk'))
+                        user=request.user, recipe=OuterRef("pk"))
                 )
             ).filter(id=recipe_id).first()
         else:
@@ -190,7 +188,7 @@ class RecipeView(APIView):
             if serializer.is_valid():
                 recipe = serializer.save()
                 output = RecipeSerializer(
-                    recipe, context={'request': request}
+                    recipe, context={"request": request}
                 ).data
                 return JsonResponse(output)
 

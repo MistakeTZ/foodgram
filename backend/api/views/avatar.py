@@ -1,7 +1,8 @@
 from http import HTTPStatus
+
+from api.serializers import AvatarSerializer
 from django.http.response import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view
-from api.serializers import AvatarSerializer
 
 
 @api_view(["PUT", "DELETE"])

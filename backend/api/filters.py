@@ -1,14 +1,14 @@
 import django_filters
-from django.db.models import Case, When, Value, IntegerField
+from django.db.models import Case, IntegerField, Value, When
 from recipe.models.ingredient import Ingredient
 
 
 class IngredientFilter(django_filters.FilterSet):
-    name = django_filters.CharFilter(method='filter_name')
+    name = django_filters.CharFilter(method="filter_name")
 
     class Meta:
         model = Ingredient
-        fields = ['name']
+        fields = ["name"]
 
     def filter_name(self, queryset, name, value):
         return (
@@ -20,5 +20,5 @@ class IngredientFilter(django_filters.FilterSet):
                     output_field=IntegerField()
                 )
             )
-            .order_by('rank', 'name')
+            .order_by("rank", "name")
         )

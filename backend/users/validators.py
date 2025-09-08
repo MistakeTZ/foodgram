@@ -1,4 +1,5 @@
 import re
+
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 
@@ -14,5 +15,6 @@ class PasswordValidator:
 
     def get_help_text(self):
         return _(
-            "Пароль должен содержать минимум 8 символов, хотя бы одну букву и одну цифру."
+            "Пароль должен содержать минимум 8 символов, "
+            "хотя бы одну букву и одну цифру."
         )

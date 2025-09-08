@@ -1,7 +1,8 @@
 from http import HTTPStatus
+
+from api.serializers import ShortRecipeSerializer
 from django.db.utils import IntegrityError
 from django.http import HttpResponse, JsonResponse
-from api.serializers import ShortRecipeSerializer
 from recipe.models.recipe import Recipe
 
 

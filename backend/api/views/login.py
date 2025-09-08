@@ -1,13 +1,13 @@
 import json
 from http import HTTPStatus
 
+from api.serializers import UserPasswordUpdateSerializer
 from django.http.response import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view
 from users.models import User
-from api.serializers import UserPasswordUpdateSerializer
 
 
 @require_POST

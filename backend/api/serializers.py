@@ -1,15 +1,16 @@
-from recipe.models.recipe_user_model import Favorite, Cart
-from users.models import Subscribtion, User
-from uuid import uuid4
 import base64
-from django.core.files.base import ContentFile
-from recipe.models.tag import Tag
-from recipe.models.recipe import Recipe, RecipeIngredient
-from recipe.models.ingredient import Ingredient
-from rest_framework import serializers
 import re
+from uuid import uuid4
+
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
+from django.core.files.base import ContentFile
+from recipe.models.ingredient import Ingredient
+from recipe.models.recipe import Recipe, RecipeIngredient
+from recipe.models.recipe_user_model import Cart, Favorite
+from recipe.models.tag import Tag
+from rest_framework import serializers
+from users.models import Subscribtion, User
 
 
 class UserPasswordUpdateSerializer(serializers.Serializer):
@@ -109,10 +110,10 @@ class Base64ImageField(serializers.ImageField):
     """Поле для работы с base64 изображениями."""
 
     def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
+        if isinstance(data, str) and data.startswith("data:image"):
             try:
-                format, imgstr = data.split(';base64,')
-                ext = format.split('/')[-1]
+                format, imgstr = data.split(";base64,")
+                ext = format.split("/")[-1]
                 file_name = f"{uuid4()}.{ext}"
                 data = ContentFile(base64.b64decode(imgstr), name=file_name)
             except (ValueError, IndexError, TypeError, base64.binascii.Error):
@@ -138,19 +139,19 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = ['name', 'text', 'cooking_time',
-                  'image', 'ingredients', 'tags']
+        fields = ["name", "text", "cooking_time",
+                  "image", "ingredients", "tags"]
 
     def create_ingredients_and_tags(self, validated_data, recipe):
-        ingredients_data = validated_data.pop('ingredients')
-        tags = validated_data.pop('tags')
+        ingredients_data = validated_data.pop("ingredients")
+        tags = validated_data.pop("tags")
         recipe.tags.set(tags)
 
         recipe_ingredients = [
             RecipeIngredient(
                 recipe=recipe,
-                ingredient_id=item['id'],
-                amount=item['amount']
+                ingredient_id=item["id"],
+                amount=item["amount"]
             )
             for item in ingredients_data
         ]
@@ -160,7 +161,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         return recipe
 
     def create(self, validated_data):
-        validated_data['author'] = self.context.get('request').user
+        validated_data["author"] = self.context.get("request").user
         recipe = Recipe.objects.create(**validated_data)
 
         self.create_ingredients_and_tags(validated_data, recipe)

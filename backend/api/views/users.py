@@ -1,15 +1,15 @@
 from http import HTTPStatus
 
 from api.paginator import PagePagination
+from api.serializers import UserSerializer
 from api.views.register import register_user
+from app import constants
 from django.http.response import JsonResponse
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from users.models import User
-from api.serializers import UserSerializer
-from app import constants
 
 
 class UserListView(APIView):

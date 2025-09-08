@@ -1,6 +1,6 @@
+from api.serializers import FavoriteSerializer
 from api.views.user_reciepe_relation import handle_user_recipe_relation
 from rest_framework.decorators import api_view
-from api.serializers import FavoriteSerializer
 
 
 @api_view(["POST", "DELETE"])

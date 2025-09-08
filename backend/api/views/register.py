@@ -1,9 +1,9 @@
 import json
 from http import HTTPStatus
 
+from api.serializers import UserSerializer
 from django.db import IntegrityError
 from django.http.response import JsonResponse
-from api.serializers import UserSerializer
 
 
 def register_user(request):

@@ -1,6 +1,9 @@
 import io
 from os import path
 
+from api.serializers import CartSerializer
+from api.views.user_reciepe_relation import handle_user_recipe_relation
+from django.http import FileResponse
 from django.utils import timezone
 from recipe.models.recipe import RecipeIngredient
 from recipe.models.recipe_user_model import Cart
@@ -9,9 +12,6 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from rest_framework.decorators import api_view
-from api.serializers import CartSerializer
-from api.views.user_reciepe_relation import handle_user_recipe_relation
-from django.http import FileResponse
 
 
 @api_view(["POST", "DELETE"])
@@ -50,7 +50,7 @@ def download_shopping_cart(request):
 
     pdf = gen_pdf(cart_ingredients.values())
     now = timezone.now()
-    filename = f"cart-{now.strftime('%d-%m-%Y-%H-%M')}.pdf"
+    filename = f'cart-{now.strftime("%d-%m-%Y-%H-%M")}.pdf'
 
     return FileResponse(pdf, as_attachment=True, filename=filename)
 
@@ -73,14 +73,14 @@ def gen_pdf(ingredients):
     for i, ingredient in enumerate(ingredients):
         if i == len(ingredients) - 1:
             line = (
-                f"- {ingredient['name']}: {ingredient['amount']} "
-                f"{ingredient['measurement_unit']}."
+                f'- {ingredient["name"]}: {ingredient["amount"]} '
+                f'{ingredient["measurement_unit"]}.'
             )
             elements.append(Paragraph(line, style))
         else:
             line = (
-                f"- {ingredient['name']}: {ingredient['amount']} "
-                f"{ingredient['measurement_unit']};"
+                f'- {ingredient["name"]}: {ingredient["amount"]} '
+                f'{ingredient["measurement_unit"]};'
             )
             elements.append(Paragraph(line, style))
             elements.append(Spacer(1, 6))

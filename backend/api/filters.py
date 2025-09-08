@@ -14,7 +14,7 @@ class IngredientFilter(django_filters.FilterSet):
         return (
             queryset.filter(name__icontains=value)
             .annotate(
-                rank=Case(
+                rank=Case(  # TODO: зачем это
                     When(name__istartswith=value, then=Value(0)),
                     default=Value(1),
                     output_field=IntegerField()

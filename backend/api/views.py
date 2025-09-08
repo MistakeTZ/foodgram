@@ -1,7 +1,7 @@
 ﻿import io
 import json
+import pathlib
 from http import HTTPStatus
-from os import path
 
 from api.filters import IngredientFilter
 from api.paginator import PagePagination
@@ -80,8 +80,8 @@ def shopping_cart(request, recipe_id):
     return handle_user_recipe_relation(
         request, recipe_id,
         serializer_class=CartSerializer,
-        already_exists_msg="Р РµС†РµРїС‚ СѓР¶Рµ РІ РєРѕСЂР·РёРЅРµ",
-        not_in_relation_msg="Р РµС†РµРїС‚ РЅРµ РІ РєРѕСЂР·РёРЅРµ"
+        already_exists_msg="Рецепт уже в корзине",
+        not_in_relation_msg="Рецепт не в корзине"
     )
 
 
@@ -97,7 +97,7 @@ def download_shopping_cart(request):
 
     cart_ingredients = {}
     for ingredient in ingredients:
-        ingredient = cart_ingredients.pop(
+        cart_ingredient = cart_ingredients.pop(
             ingredient.id,
             {
                 "name": ingredient.ingredient.name,
@@ -105,9 +105,9 @@ def download_shopping_cart(request):
                 "amount": 0,
             },
         )
-        ingredient["amount"] += ingredient.amount
+        cart_ingredient["amount"] += ingredient.amount
 
-        cart_ingredients[ingredient.id] = ingredient
+        cart_ingredients[ingredient.id] = cart_ingredient
 
     pdf = gen_pdf(cart_ingredients.values())
     now = timezone.now()
@@ -120,7 +120,7 @@ def gen_pdf(ingredients):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer)
 
-    font_path = path.join("static", "fonts", "DejaVuSans.ttf")
+    font_path = pathlib.Path("static", "fonts", "DejaVuSans.ttf")
     pdfmetrics.registerFont(TTFont("DejaVuSans", font_path))
 
     styles = getSampleStyleSheet()
@@ -128,7 +128,7 @@ def gen_pdf(ingredients):
     style.fontName = "DejaVuSans"
 
     elements = []
-    elements.append(Paragraph("РЎРїРёСЃРѕРє РёРЅРіСЂРµРґРёРµРЅС‚РѕРІ:", style))
+    elements.append(Paragraph("Список ингредиентов:", style))
     elements.append(Spacer(1, 10))
 
     for i, ingredient in enumerate(ingredients):
@@ -157,8 +157,8 @@ def favorite(request, recipe_id):
     return handle_user_recipe_relation(
         request, recipe_id,
         serializer_class=FavoriteSerializer,
-        already_exists_msg="Р РµС†РµРїС‚ СѓР¶Рµ РІ РёР·Р±СЂР°РЅРЅРѕРј",
-        not_in_relation_msg="Р РµС†РµРїС‚ РЅРµ РІ РёР·Р±СЂР°РЅРЅРѕРј"
+        already_exists_msg="Рецепт уже в избранном",
+        not_in_relation_msg="Рецепт не в избранном"
     )
 
 
@@ -180,7 +180,7 @@ def ingredient(request, ingredient_id):
     ingredient = Ingredient.objects.filter(id=ingredient_id).first()
     if not ingredient:
         return JsonResponse(
-            {"field_name": ["РРЅРіСЂРµРґРёРµРЅС‚ РЅРµ РЅР°РёМ†РґРµРЅ"]},
+            {"field_name": ["Ингредиент не найден"]},
             status=HTTPStatus.BAD_REQUEST
         )
     return JsonResponse(IngredientSingleSerializer(ingredient).data)
@@ -236,7 +236,7 @@ def login(request):
             raise ValueError
     except ValueError:
         return JsonResponse(
-            {"error": "РќРµРІРµСЂРЅС‹Р№ РїР°СЂРѕР»СЊ"},
+            {"error": "Неверный пароль"},
             status=HTTPStatus.BAD_REQUEST
         )
 
@@ -311,7 +311,7 @@ class RecipesView(APIView):
         if request.GET.get("is_favorited") == "1":
             if not user.is_authenticated:
                 return JsonResponse(
-                    {"error": "Р’С‹ РЅРµ Р°РІС‚РѕСЂРёР·РѕРІР°РЅС‹"},
+                    {"error": "Вы не авторизованы"},
                     status=HTTPStatus.UNAUTHORIZED
                 )
             favorites = Favorite.objects.filter(
@@ -324,7 +324,7 @@ class RecipesView(APIView):
         if request.GET.get("is_in_shopping_cart") == "1":
             if not user.is_authenticated:
                 return JsonResponse(
-                    {"error": "Р’С‹ РЅРµ Р°РІС‚РѕСЂРёР·РѕРІР°РЅС‹"},
+                    {"error": "Вы не авторизованы"},
                     status=HTTPStatus.UNAUTHORIZED
                 )
             cart = Cart.objects.filter(user=request.user).values_list(
@@ -509,7 +509,7 @@ def register_user(request):
     except IntegrityError:
         return JsonResponse(
             {"field_name": [
-                "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЃ С‚Р°РєРёРј email РёР»Рё username СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚"]},
+                "Пользователь с таким email или username уже существует"]},
             status=HTTPStatus.BAD_REQUEST,
         )
 
@@ -524,7 +524,7 @@ class SubscribeView(APIView):
 
         if not author:
             return JsonResponse(
-                {"error": "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°РёМ†РґРµРЅ"},
+                {"error": "Пользователь не найден"},
                 status=HTTPStatus.NOT_FOUND
             )
 
@@ -533,13 +533,13 @@ class SubscribeView(APIView):
             user=request.user
         ).exists():
             return JsonResponse(
-                {"error": "РџРѕРґРїРёСЃРєР° СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚"},
+                {"error": "Подписка уже существует"},
                 status=HTTPStatus.BAD_REQUEST
             )
 
         if author == request.user:
             return JsonResponse(
-                {"error": "РќРµР»СЊР·СЏ РїРѕРґРїРёСЃР°С‚СЊСЃСЏ РЅР° СЃР°РјРѕРіРѕ СЃРµР±СЏ"},
+                {"error": "Нельзя подписаться на самого себя"},
                 status=HTTPStatus.BAD_REQUEST,
             )
 
@@ -561,7 +561,7 @@ class SubscribeView(APIView):
 
         if not author:
             return JsonResponse(
-                {"error": "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°РёМ†РґРµРЅ"},
+                {"error": "Пользователь не найден"},
                 status=HTTPStatus.NOT_FOUND
             )
 
@@ -571,7 +571,7 @@ class SubscribeView(APIView):
 
         if not deleted:
             return JsonResponse(
-                {"error": "РџРѕРґРїРёСЃРєР° РЅРµ РЅР°Р№РґРµРЅР°"}, status=HTTPStatus.BAD_REQUEST
+                {"error": "Подписка не найдена"}, status=HTTPStatus.BAD_REQUEST
             )
         return HttpResponse(status=HTTPStatus.NO_CONTENT)
 
@@ -607,7 +607,7 @@ def tag(request, tag_id):
     tag = Tag.objects.filter(id=tag_id).first()
     if not tag:
         return JsonResponse(
-            {"detail": "РўРµРі РЅРµ РЅР°РёМ†РґРµРЅ"},
+            {"detail": "Тег не найден"},
             status=HTTPStatus.NOT_FOUND
         )
     return JsonResponse(TagSerializer(tag).data)
@@ -674,12 +674,12 @@ def auth_user(request):
 
 
 def handle_user_recipe_relation(request, recipe_id, serializer_class,
-                                already_exists_msg="Р РµС†РµРїС‚ СѓР¶Рµ РґРѕР±Р°РІР»РµРЅ",
-                                not_in_relation_msg="Р РµС†РµРїС‚ РЅРµ РІ СЃРїРёСЃРєРµ"):
+                                already_exists_msg="Рецепт уже добавлен",
+                                not_in_relation_msg="Рецепт не в списке"):
     recipe = Recipe.objects.filter(id=recipe_id).first()
     if not recipe:
         return JsonResponse(
-            {"error": "Р РµС†РµРїС‚ РЅРµ РЅР°Р№РґРµРЅ"},
+            {"error": "Рецепт не найден"},
             status=HTTPStatus.NOT_FOUND
         )
 

@@ -27,8 +27,11 @@ urlpatterns = [
     path("recipes/", views.RecipesView.as_view(), name="recipes"),
     path("recipes/<int:recipe_id>/",
          views.RecipeView.as_view(), name="recipe"),
-    path("recipes/<int:recipe_id>/get-link/",
-         views.get_link, name="get_link"),
+    path(
+        "recipes/<int:recipe_id>/get-link/",
+         views.ShortLinkViewSet.as_view({"get": "get_link"}),
+         name="get_link"
+    ),
     path("tags/", views.tags, name="tags"),
     path("tags/<int:tag_id>/", views.tag, name="tag"),
     path(
@@ -48,12 +51,14 @@ urlpatterns = [
     ),
     path(
         "recipes/<int:recipe_id>/shopping_cart/",
-        views.shopping_cart,
+        views.ShoppingCartViewSet.as_view(
+            {"post": "recipes", "delete": "recipes"}
+        ),
         name="shopping_cart",
     ),
     path(
         "recipes/download_shopping_cart/",
-        views.download_shopping_cart,
+        views.ShoppingCartViewSet.as_view({"get": "download"}),
         name="download_shopping_cart",
     ),
 ]

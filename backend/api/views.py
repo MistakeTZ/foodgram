@@ -41,11 +41,12 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet, ViewSet
 from users.models import Subscribtion, User
 
 
@@ -75,81 +76,81 @@ def avatar(request):
         return HttpResponse(status=HTTPStatus.NO_CONTENT)
 
 
-@api_view(["POST", "DELETE"])
-def shopping_cart(request, recipe_id):
-    return handle_user_recipe_relation(
-        request, recipe_id,
-        serializer_class=CartSerializer,
-        already_exists_msg="Рецепт уже в корзине",
-        not_in_relation_msg="Рецепт не в корзине"
-    )
+class ShoppingCartViewSet(ViewSet):
+    """ViewSet для работы с корзиной."""
 
-
-@api_view(["GET"])
-def download_shopping_cart(request):
-    cart = Cart.objects.filter(
-        user=request.user).values_list("recipe_id", flat=True)
-    ingredients = RecipeIngredient.objects.filter(
-        recipe_id__in=cart
-    ).select_related(
-        "ingredient", "recipe"
-    )
-
-    cart_ingredients = {}
-    for ingredient in ingredients:
-        cart_ingredient = cart_ingredients.pop(
-            ingredient.id,
-            {
-                "name": ingredient.ingredient.name,
-                "measurement_unit": ingredient.ingredient.measurement_unit,
-                "amount": 0,
-            },
+    @action(detail=True, methods=["post", "delete"])
+    def recipes(self, request, recipe_id=None):
+        return handle_user_recipe_relation(
+            request, recipe_id,
+            serializer_class=CartSerializer,
+            already_exists_msg="Рецепт уже в корзине",
+            not_in_relation_msg="Рецепт не в корзине"
         )
-        cart_ingredient["amount"] += ingredient.amount
 
-        cart_ingredients[ingredient.id] = cart_ingredient
+    @action(detail=False, methods=["get"])
+    def download(self, request):
+        cart = Cart.objects.filter(
+            user=request.user
+        ).values_list("recipe_id", flat=True)
 
-    pdf = gen_pdf(cart_ingredients.values())
-    now = timezone.now()
-    filename = f'cart-{now.strftime("%d-%m-%Y-%H-%M")}.pdf'
+        ingredients = RecipeIngredient.objects.filter(
+            recipe_id__in=cart
+        ).select_related("ingredient", "recipe")
 
-    return FileResponse(pdf, as_attachment=True, filename=filename)
-
-
-def gen_pdf(ingredients):
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer)
-
-    font_path = pathlib.Path("static", "fonts", "DejaVuSans.ttf")
-    pdfmetrics.registerFont(TTFont("DejaVuSans", font_path))
-
-    styles = getSampleStyleSheet()
-    style = styles["Normal"]
-    style.fontName = "DejaVuSans"
-
-    elements = []
-    elements.append(Paragraph("Список ингредиентов:", style))
-    elements.append(Spacer(1, 10))
-
-    for i, ingredient in enumerate(ingredients):
-        if i == len(ingredients) - 1:
-            line = (
-                f'- {ingredient["name"]}: {ingredient["amount"]} '
-                f'{ingredient["measurement_unit"]}.'
+        cart_ingredients = {}
+        for ingredient in ingredients:
+            cart_ingredient = cart_ingredients.pop(
+                ingredient.id,
+                {
+                    "name": ingredient.ingredient.name,
+                    "measurement_unit": ingredient.ingredient.measurement_unit,
+                    "amount": 0,
+                },
             )
-            elements.append(Paragraph(line, style))
-        else:
-            line = (
-                f'- {ingredient["name"]}: {ingredient["amount"]} '
-                f'{ingredient["measurement_unit"]};'
-            )
-            elements.append(Paragraph(line, style))
-            elements.append(Spacer(1, 6))
+            cart_ingredient["amount"] += ingredient.amount
+            cart_ingredients[ingredient.id] = cart_ingredient
 
-    doc.build(elements)
-    buffer.seek(0)
+        pdf = self.gen_pdf(cart_ingredients.values())
+        now = timezone.now()
+        filename = f'cart-{now.strftime("%d-%m-%Y-%H-%M")}.pdf'
 
-    return buffer
+        return FileResponse(pdf, as_attachment=True, filename=filename)
+
+    def gen_pdf(self, ingredients):
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer)
+
+        font_path = pathlib.Path("static", "fonts", "DejaVuSans.ttf")
+        pdfmetrics.registerFont(TTFont("DejaVuSans", font_path))
+
+        styles = getSampleStyleSheet()
+        style = styles["Normal"]
+        style.fontName = "DejaVuSans"
+
+        elements = []
+        elements.append(Paragraph("Список ингредиентов:", style))
+        elements.append(Spacer(1, 10))
+
+        for i, ingredient in enumerate(ingredients):
+            if i == len(ingredients) - 1:
+                line = (
+                    f'- {ingredient["name"]}: {ingredient["amount"]} '
+                    f'{ingredient["measurement_unit"]}.'
+                )
+                elements.append(Paragraph(line, style))
+            else:
+                line = (
+                    f'- {ingredient["name"]}: {ingredient["amount"]} '
+                    f'{ingredient["measurement_unit"]};'
+                )
+                elements.append(Paragraph(line, style))
+                elements.append(Spacer(1, 6))
+
+        doc.build(elements)
+        buffer.seek(0)
+
+        return buffer
 
 
 @api_view(["POST", "DELETE"])
@@ -186,28 +187,34 @@ def ingredient(request, ingredient_id):
     return JsonResponse(IngredientSingleSerializer(ingredient).data)
 
 
-@csrf_exempt
-def short_link(request, link):
-    recipe_id = int(link, 16)
-    return redirect(f"/recipes/{recipe_id}")
+class ShortLinkViewSet(ViewSet):
+    """ViewSet для генерации и перехода по коротким ссылкам рецептов."""
 
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
-@csrf_exempt
-def get_link(request, recipe_id):
-    recipe = Recipe.objects.filter(id=recipe_id).first()
+    @action(detail=True, methods=["get"])
+    def get_link(self, request, recipe_id=None):
+        recipe = Recipe.objects.filter(id=recipe_id).exists()
+        if not recipe:
+            return JsonResponse(
+                {"detail": "Recipe not found"},
+                status=HTTPStatus.NOT_FOUND
+            )
 
-    if not recipe:
+        link = hex(recipe_id)
+        short_url = request.build_absolute_uri(
+            reverse("short-link", args=[link])
+        )
         return JsonResponse(
-            {"detail": "Recipe not found"},
-            status=HTTPStatus.NOT_FOUND
+            {"short-link": short_url},
+            status=200,
         )
 
-    link = hex(recipe.id)
-    return JsonResponse(
-        {"short-link": request.build_absolute_uri(
-            reverse("short_link", args=[link]))},
-        status=200,
-    )
+    @action(detail=True, methods=["get"])
+    def short_link(self, request, link=None, pk=None):
+        recipe_id = int(link, 16)
+        return redirect(f"/recipes/{recipe_id}")
 
 
 class RecipesView(APIView):
@@ -408,45 +415,6 @@ def auth_user(request):
         return request
 
 
-def register_user(request):
-    field_errors = []
-
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse(
-            {"field_name": ["Invalid JSON"]}, status=HTTPStatus.BAD_REQUEST
-        )
-
-    serializer = UserSerializer(
-        data=request.data, context={"request": request})
-    if serializer.is_valid():
-        user = serializer.save()
-    else:
-        field_errors = [str(field[0]) for field in serializer.errors.values()]
-        return JsonResponse(
-            {"field_name": field_errors},
-            status=HTTPStatus.BAD_REQUEST
-        )
-
-    try:
-        data = {
-            "email": user.email,
-            "id": user.id,
-            "username": user.username,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-        }
-
-        return JsonResponse(data, status=HTTPStatus.CREATED)
-    except IntegrityError:
-        return JsonResponse(
-            {"field_name": [
-                "Пользователь с таким email или username уже существует"]},
-            status=HTTPStatus.BAD_REQUEST,
-        )
-
-
 class SubscribeView(APIView):
     def post(self, request, author_id):
         author = (
@@ -565,7 +533,42 @@ class UserListView(APIView):
         return paginator.get_paginated_response(serializer.data)
 
     def post(self, request):
-        return register_user(request)
+        field_errors = []
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"field_name": ["Invalid JSON"]}, status=HTTPStatus.BAD_REQUEST
+            )
+
+        serializer = UserSerializer(
+            data=request.data, context={"request": request})
+        if serializer.is_valid():
+            user = serializer.save()
+        else:
+            field_errors = [str(field[0]) for field in serializer.errors.values()]
+            return JsonResponse(
+                {"field_name": field_errors},
+                status=HTTPStatus.BAD_REQUEST
+            )
+
+        try:
+            data = {
+                "email": user.email,
+                "id": user.id,
+                "username": user.username,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+            }
+
+            return JsonResponse(data, status=HTTPStatus.CREATED)
+        except IntegrityError:
+            return JsonResponse(
+                {"field_name": [
+                    "Пользователь с таким email или username уже существует"]},
+                status=HTTPStatus.BAD_REQUEST,
+            )
 
 
 class UserView(APIView):

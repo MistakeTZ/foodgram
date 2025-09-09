@@ -24,9 +24,24 @@ urlpatterns = [
         views.SubscribeView.as_view(),
         name="subscribe",
     ),
-    path("recipes/", views.RecipesView.as_view(), name="recipes"),
-    path("recipes/<int:recipe_id>/",
-         views.RecipeView.as_view(), name="recipe"),
+    path(
+        "recipes/",
+        views.RecipeView.as_view(
+            {"get": "get_recipes", "post": "post_recipe"}
+        ),
+        name="recipes"
+    ),
+    path(
+        "recipes/<int:pk>/",
+        views.RecipeView.as_view(
+            {
+                "get": "get_recipe",
+                "patch": "update_or_delete",
+                "delete": "update_or_delete"
+            }
+        ),
+        name="recipe"
+    ),
     path(
         "recipes/<int:recipe_id>/get-link/",
          views.ShortLinkViewSet.as_view({"get": "get_link"}),
@@ -50,7 +65,7 @@ urlpatterns = [
         name="favorite"
     ),
     path(
-        "recipes/<int:recipe_id>/shopping_cart/",
+        "recipes/<int:pk>/shopping_cart/",
         views.ShoppingCartViewSet.as_view(
             {"post": "recipes", "delete": "recipes"}
         ),

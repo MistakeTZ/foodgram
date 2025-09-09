@@ -80,9 +80,9 @@ class ShoppingCartViewSet(ViewSet):
     """ViewSet для работы с корзиной."""
 
     @action(detail=True, methods=["post", "delete"])
-    def recipes(self, request, recipe_id=None):
+    def recipes(self, request, pk=None):
         return handle_user_recipe_relation(
-            request, recipe_id,
+            request, pk,
             serializer_class=CartSerializer,
             already_exists_msg="Рецепт уже в корзине",
             not_in_relation_msg="Рецепт не в корзине"
@@ -212,16 +212,19 @@ class ShortLinkViewSet(ViewSet):
         )
 
     @action(detail=True, methods=["get"])
-    def short_link(self, request, link=None, pk=None):
+    def short_link(self, request, link=None):
         recipe_id = int(link, 16)
         return redirect(f"/recipes/{recipe_id}")
 
 
-class RecipesView(APIView):
+class RecipeView(ModelViewSet):
     authentication_classes = []
     permission_classes = [AllowAny]
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeSerializer
 
-    def get(self, request):
+    @action(detail=False, methods=["get"])
+    def get_recipes(self, request):
         request = auth_user(request)
 
         user = request.user
@@ -279,25 +282,17 @@ class RecipesView(APIView):
             paginator.page_size = request.GET.get("limit")
 
         paginated = paginator.paginate_queryset(recipes, request)
-        serializer = RecipeSerializer(
+        serializer = self.get_serializer(
             paginated, many=True, context={"request": request})
 
         return paginator.get_paginated_response(serializer.data)
 
-    def post(self, request):
-        auth = TokenAuthentication()
-        user_auth_tuple = auth.authenticate(request)
-        if not user_auth_tuple:
-            return JsonResponse(
-                {"error": "Invalid token"}, status=HTTPStatus.UNAUTHORIZED
-            )
-        request.user, request.auth = user_auth_tuple
-
-        if not IsAuthenticated().has_permission(request, self):
-            return JsonResponse(
-                {"error": "Permission denied"}, status=HTTPStatus.UNAUTHORIZED
-            )
-
+    @action(
+        detail=True, methods=["post"],
+        permission_classes=[IsAuthenticated],
+        authentication_classes=[TokenAuthentication]
+    )
+    def post_recipe(self, request):
         serializer = RecipeCreateUpdateSerializer(
             data=request.data,
             context={"request": request}
@@ -312,12 +307,7 @@ class RecipesView(APIView):
             status=HTTPStatus.BAD_REQUEST
         )
 
-
-class RecipeView(APIView):
-    authentication_classes = []
-    permission_classes = [AllowAny]
-
-    def get_object(self, recipe_id, request):
+    def get_object(self, pk, request):
         if request.user.is_authenticated:
             recipe = Recipe.objects.annotate(
                 is_in_shopping_cart=Exists(
@@ -328,61 +318,45 @@ class RecipeView(APIView):
                     Favorite.objects.filter(
                         user=request.user, recipe=OuterRef("pk"))
                 )
-            ).filter(id=recipe_id).first()
+            ).filter(id=pk).first()
         else:
             recipe = Recipe.objects.annotate(
                 is_in_shopping_cart=Exists(Cart.objects.none()),
                 is_favorited=Exists(Favorite.objects.none())
-            ).filter(id=recipe_id).first()
+            ).filter(id=pk).first()
 
         if recipe:
             return recipe
         raise Http404("Recipe not found")
 
-    def get(self, request, recipe_id):
+    @action(detail=True, methods=["get"])
+    def get_recipe(self, request, pk=None):
         request = auth_user(request)
 
-        recipe = self.get_object(recipe_id, request)
-        return JsonResponse(RecipeSerializer(
+        recipe = self.get_object(pk, request)
+        return JsonResponse(self.get_serializer(
             recipe,
             context={"request": request}
         ).data)
 
-    def patch(self, request, recipe_id):
-        return self._update_or_delete(request, recipe_id, method="PATCH")
-
-    def delete(self, request, recipe_id):
-        return self._update_or_delete(request, recipe_id, method="DELETE")
-
-    def _update_or_delete(self, request, recipe_id, method):
-        auth = TokenAuthentication()
-        try:
-            user_auth_tuple = auth.authenticate(request)
-            if not user_auth_tuple:
-                raise AuthenticationFailed
-        except AuthenticationFailed:
-            return JsonResponse(
-                {"error": "Invalid token"}, status=HTTPStatus.UNAUTHORIZED
-            )
-
-        request.user, request.auth = user_auth_tuple
-
-        if not IsAuthenticated().has_permission(request, self):
-            return JsonResponse(
-                {"error": "Permission denied"}, status=HTTPStatus.UNAUTHORIZED
-            )
-
-        recipe = self.get_object(recipe_id, request)
+    @action(
+        detail=True, methods=["patch", "delete"],
+        permission_classes=[IsAuthenticated],
+        authentication_classes=[TokenAuthentication]
+    )
+    def update_or_delete(self, request, pk=None):
+        recipe = self.get_object(pk, request)
+        print(recipe.author, request.user)
         if recipe.author != request.user:
             return JsonResponse(
                 {"error": "No permission"},
                 status=HTTPStatus.FORBIDDEN
             )
 
-        if method == "DELETE":
+        if request.method == "DELETE":
             recipe.delete()
             return HttpResponse(status=HTTPStatus.NO_CONTENT)
-        elif method == "PATCH":
+        elif request.method == "PATCH":
             serializer = RecipeCreateUpdateSerializer(
                 recipe,
                 data=request.data,

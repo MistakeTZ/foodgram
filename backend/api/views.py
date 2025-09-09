@@ -1,5 +1,4 @@
 ﻿import io
-import json
 import pathlib
 from http import HTTPStatus
 
@@ -18,15 +17,17 @@ from api.serializers import (
     UserSerializer,
     UserWithRecipesSerializer,
 )
-from app import constants
 from django.db import IntegrityError
 from django.db.models import Count, Exists, OuterRef
-from django.http import Http404, FileResponse, HttpResponse, JsonResponse
+from django.http import (
+    FileResponse,
+    HttpResponse,
+    HttpResponseForbidden,
+    JsonResponse
+)
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET
 from django_filters.rest_framework import DjangoFilterBackend
 from recipe.models import (
     Cart,
@@ -41,39 +42,15 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.decorators import api_view, action
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.generics import ListAPIView
+from rest_framework.decorators import action, api_view
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet, ViewSet
+from rest_framework.response import Response
+from rest_framework.viewsets import (
+    ModelViewSet,
+    ReadOnlyModelViewSet,
+    ViewSet
+)
 from users.models import Subscribtion, User
-
-
-@api_view(["PUT", "DELETE"])
-def avatar(request):
-    if request.method == "PUT":
-        user = request.user
-
-        serializer = AvatarSerializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(
-                {"avatar": user.avatar.url},
-                status=HTTPStatus.OK
-            )
-
-        return JsonResponse(
-            {"field_name": [str(field[0])
-                            for field in serializer.errors.values()]},
-            status=HTTPStatus.BAD_REQUEST
-        )
-
-    elif request.method == "DELETE":
-        user = request.user
-        if user.avatar:
-            user.avatar.delete(save=True)
-        return HttpResponse(status=HTTPStatus.NO_CONTENT)
 
 
 class ShoppingCartViewSet(ViewSet):
@@ -153,17 +130,11 @@ class ShoppingCartViewSet(ViewSet):
         return buffer
 
 
-@api_view(["POST", "DELETE"])
-def favorite(request, recipe_id):
-    return handle_user_recipe_relation(
-        request, recipe_id,
-        serializer_class=FavoriteSerializer,
-        already_exists_msg="Рецепт уже в избранном",
-        not_in_relation_msg="Рецепт не в избранном"
-    )
-
-
-class IngredientListView(ListAPIView):
+class IngredientViewSet(ReadOnlyModelViewSet):
+    """
+    ViewSet для ингредиентов.
+    Поддерживает list и retrieve.
+    """
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSingleSerializer
     permission_classes = [AllowAny]
@@ -175,16 +146,15 @@ class IngredientListView(ListAPIView):
     ordering_fields = ["name"]
     ordering = ["name"]
 
-
-@require_GET
-def ingredient(request, ingredient_id):
-    ingredient = Ingredient.objects.filter(id=ingredient_id).first()
-    if not ingredient:
-        return JsonResponse(
-            {"field_name": ["Ингредиент не найден"]},
-            status=HTTPStatus.BAD_REQUEST
-        )
-    return JsonResponse(IngredientSingleSerializer(ingredient).data)
+    def retrieve(self, request, *args, **kwargs):
+        ingredient = self.get_object()
+        if not ingredient:
+            return JsonResponse(
+                {"field_name": ["Ингредиент не найден"]},
+                status=HTTPStatus.BAD_REQUEST
+            )
+        serializer = self.get_serializer(ingredient)
+        return JsonResponse(serializer.data)
 
 
 class ShortLinkViewSet(ViewSet):
@@ -217,358 +187,253 @@ class ShortLinkViewSet(ViewSet):
         return redirect(f"/recipes/{recipe_id}")
 
 
-class RecipeView(ModelViewSet):
-    authentication_classes = []
+class RecipeViewSet(ModelViewSet):
+    authentication_classes = [TokenAuthentication]
     permission_classes = [AllowAny]
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    pagination_class = PagePagination
 
-    @action(detail=False, methods=["get"])
-    def get_recipes(self, request):
-        request = auth_user(request)
-
-        user = request.user
-        recipes = Recipe.objects.all()
+    def get_queryset(self):
+        user = self.request.user
+        qs = Recipe.objects.all()
 
         if user.is_authenticated:
-            recipes = recipes.annotate(
+            qs = qs.annotate(
                 is_favorited=Exists(Favorite.objects.filter(
                     user=user, recipe=OuterRef("pk"))),
                 is_in_shopping_cart=Exists(Cart.objects.filter(
-                    user=user, recipe=OuterRef("pk")))
+                    user=user, recipe=OuterRef("pk"))),
             )
         else:
-            recipes = recipes.annotate(
+            qs = qs.annotate(
                 is_favorited=Exists(Favorite.objects.none()),
-                is_in_shopping_cart=Exists(Cart.objects.none())
-            )
-
-        author = request.GET.get("author")
-        if author:
-            recipes = recipes.filter(author=author)
-
-        tags = request.GET.getlist("tags")
-        if tags:
-            recipes = recipes.filter(tags__slug__in=tags).distinct()
-
-        if request.GET.get("is_favorited") == "1":
-            if not user.is_authenticated:
-                return JsonResponse(
-                    {"error": "Вы не авторизованы"},
-                    status=HTTPStatus.UNAUTHORIZED
-                )
-            favorites = Favorite.objects.filter(
-                user=request.user
-            ).values_list(
-                "recipe_id", flat=True
-            )
-            recipes = recipes.filter(id__in=favorites)
-
-        if request.GET.get("is_in_shopping_cart") == "1":
-            if not user.is_authenticated:
-                return JsonResponse(
-                    {"error": "Вы не авторизованы"},
-                    status=HTTPStatus.UNAUTHORIZED
-                )
-            cart = Cart.objects.filter(user=request.user).values_list(
-                "recipe_id", flat=True
-            )
-            recipes = recipes.filter(id__in=cart)
-
-        recipes = recipes.order_by("-id")
-
-        paginator = PagePagination()
-        if request.GET.get("limit"):
-            paginator.page_size = request.GET.get("limit")
-
-        paginated = paginator.paginate_queryset(recipes, request)
-        serializer = self.get_serializer(
-            paginated, many=True, context={"request": request})
-
-        return paginator.get_paginated_response(serializer.data)
-
-    @action(
-        detail=True, methods=["post"],
-        permission_classes=[IsAuthenticated],
-        authentication_classes=[TokenAuthentication]
-    )
-    def post_recipe(self, request):
-        serializer = RecipeCreateUpdateSerializer(
-            data=request.data,
-            context={"request": request}
-        )
-        if serializer.is_valid():
-            recipe = serializer.save()
-            return redirect("recipe", recipe.id)
-
-        field_errors = [str(field[0]) for field in serializer.errors.values()]
-        return JsonResponse(
-            {"field_name": field_errors},
-            status=HTTPStatus.BAD_REQUEST
-        )
-
-    def get_object(self, pk, request):
-        if request.user.is_authenticated:
-            recipe = Recipe.objects.annotate(
-                is_in_shopping_cart=Exists(
-                    Cart.objects.filter(user=request.user,
-                                        recipe=OuterRef("pk"))
-                ),
-                is_favorited=Exists(
-                    Favorite.objects.filter(
-                        user=request.user, recipe=OuterRef("pk"))
-                )
-            ).filter(id=pk).first()
-        else:
-            recipe = Recipe.objects.annotate(
                 is_in_shopping_cart=Exists(Cart.objects.none()),
-                is_favorited=Exists(Favorite.objects.none())
-            ).filter(id=pk).first()
-
-        if recipe:
-            return recipe
-        raise Http404("Recipe not found")
-
-    @action(detail=True, methods=["get"])
-    def get_recipe(self, request, pk=None):
-        request = auth_user(request)
-
-        recipe = self.get_object(pk, request)
-        return JsonResponse(self.get_serializer(
-            recipe,
-            context={"request": request}
-        ).data)
-
-    @action(
-        detail=True, methods=["patch", "delete"],
-        permission_classes=[IsAuthenticated],
-        authentication_classes=[TokenAuthentication]
-    )
-    def update_or_delete(self, request, pk=None):
-        recipe = self.get_object(pk, request)
-        print(recipe.author, request.user)
-        if recipe.author != request.user:
-            return JsonResponse(
-                {"error": "No permission"},
-                status=HTTPStatus.FORBIDDEN
             )
 
-        if request.method == "DELETE":
-            recipe.delete()
-            return HttpResponse(status=HTTPStatus.NO_CONTENT)
-        elif request.method == "PATCH":
-            serializer = RecipeCreateUpdateSerializer(
-                recipe,
-                data=request.data,
-                partial=True
-            )
-            if serializer.is_valid():
-                recipe = serializer.save()
-                output = RecipeSerializer(
-                    recipe, context={"request": request}
-                ).data
-                return JsonResponse(output)
+        author = self.request.query_params.get("author")
+        if author:
+            qs = qs.filter(author=author)
 
-            field_errors = [str(field[0])
-                            for field in serializer.errors.values()]
-            return JsonResponse(
-                {"field_name": field_errors},
-                status=HTTPStatus.BAD_REQUEST
-            )
+        tags = self.request.query_params.getlist("tags")
+        if tags:
+            qs = qs.filter(tags__slug__in=tags).distinct()
 
+        if self.request.query_params.get(
+            "is_favorited"
+        ) == "1" and user.is_authenticated:
+            favorites = Favorite.objects.filter(
+                user=user).values_list("recipe_id", flat=True)
+            qs = qs.filter(id__in=favorites)
 
-def auth_user(request):
-    auth = TokenAuthentication()
-    try:
-        user_auth_tuple = auth.authenticate(request)
-        if user_auth_tuple:
-            request.user, request.auth = user_auth_tuple
-    except AuthenticationFailed:
-        pass
-    finally:
-        return request
+        if self.request.query_params.get(
+            "is_in_shopping_cart"
+        ) == "1" and user.is_authenticated:
+            cart = Cart.objects.filter(
+                user=user).values_list("recipe_id", flat=True)
+            qs = qs.filter(id__in=cart)
 
+        return qs.order_by("-id")
 
-class SubscribeView(APIView):
-    def post(self, request, author_id):
-        author = (
-            User.objects.filter(id=author_id)
-            .annotate(recipes_count=Count("recipes"))
-            .first()
+    def get_serializer_class(self):
+        if self.action in ["create", "update", "partial_update"]:
+            return RecipeCreateUpdateSerializer
+        return RecipeSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        recipe = serializer.save(author=request.user)
+
+        read_serializer = RecipeSerializer(
+            recipe, context={"request": request})
+        headers = self.get_success_headers(read_serializer.data)
+        return Response(
+            read_serializer.data,
+            status=HTTPStatus.CREATED,
+            headers=headers
         )
 
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        recipe = serializer.save()
+
+        read_serializer = RecipeSerializer(
+            recipe, context={"request": request})
+        return Response(read_serializer.data)
+
+    def perform_update(self, serializer):
+        recipe = self.get_object()
+        if recipe.author != self.request.user:
+            raise HttpResponseForbidden("No permission")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.author != self.request.user:
+            raise HttpResponseForbidden("No permission")
+        instance.delete()
+
+
+class UserViewSet(ModelViewSet):
+    queryset = User.objects.all()
+    permission_classes = [AllowAny]
+    authentication_classes = [TokenAuthentication]
+    serializer_class = UserSerializer
+
+    def get_subscriptions_queryset(self):
+        return User.objects.filter(
+            id__in=Subscribtion.objects.filter(
+                user=self.request.user
+            ).values_list(
+                "author_id", flat=True
+            )
+        ).annotate(recipes_count=Count("recipes"))
+
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[IsAuthenticated]
+    )
+    def me(self, request):
+        serializer = UserWithRecipesSerializer(
+            request.user, context={"request": request})
+        return Response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=["post", "delete"],
+        permission_classes=[IsAuthenticated]
+    )
+    def subscribe(self, request, pk=None):
+        author = User.objects.filter(id=pk).annotate(
+            recipes_count=Count("recipes")).first()
         if not author:
-            return JsonResponse(
-                {"error": "Пользователь не найден"},
+            return Response(
+                {"error": "Пользователь не найден"},
                 status=HTTPStatus.NOT_FOUND
             )
 
+        if request.method == "DELETE":
+            deleted, _ = Subscribtion.objects.filter(
+                user=request.user, author=author).delete()
+            if not deleted:
+                return Response(
+                    {"error": "Подписка не найдена"},
+                    status=HTTPStatus.BAD_REQUEST
+                )
+            return Response(status=HTTPStatus.NO_CONTENT)
+
+        if author == request.user:
+            return Response(
+                {"error": "Нельзя подписаться на самого себя"},
+                status=HTTPStatus.BAD_REQUEST
+            )
+
         if Subscribtion.objects.filter(
-            author=author,
-            user=request.user
+            user=request.user,
+            author=author
         ).exists():
-            return JsonResponse(
+            return Response(
                 {"error": "Подписка уже существует"},
                 status=HTTPStatus.BAD_REQUEST
             )
 
-        if author == request.user:
-            return JsonResponse(
-                {"error": "Нельзя подписаться на самого себя"},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-
         serializer = SubscribtionSerializer(
-            data={"author": author.id},
-            context={"request": request}
-        )
+            data={"author": author.id}, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save(user=request.user)
 
-        return JsonResponse(
-            UserWithRecipesSerializer(
-                author, context={"request": request}).data,
-            status=HTTPStatus.CREATED,
+        return Response(UserWithRecipesSerializer(
+            author,
+            context={"request": request}).data,
+            status=HTTPStatus.CREATED
         )
 
-    def delete(self, request, author_id):
-        author = User.objects.filter(id=author_id).first()
-
-        if not author:
-            return JsonResponse(
-                {"error": "Пользователь не найден"},
-                status=HTTPStatus.NOT_FOUND
-            )
-
-        deleted, _ = Subscribtion.objects.filter(
-            author=author, user=request.user
-        ).delete()
-
-        if not deleted:
-            return JsonResponse(
-                {"error": "Подписка не найдена"}, status=HTTPStatus.BAD_REQUEST
-            )
-        return HttpResponse(status=HTTPStatus.NO_CONTENT)
-
-
-@api_view(["GET"])
-def subscribtions(request):
-    subbed = User.objects.filter(
-        id__in=Subscribtion.objects.filter(user=request.user).values_list(
-            "author_id", flat=True
-        )
-    ).annotate(recipes_count=Count("recipes"))
-
-    paginator = PagePagination()
-    if request.GET.get("limit"):
-        paginator.page_size = request.GET.get("limit")
-    result_page = paginator.paginate_queryset(subbed, request)
-
-    serializer = UserWithRecipesSerializer(
-        result_page, many=True, context={"request": request}
+    @action(
+        detail=False,
+        methods=["get"],
+        permission_classes=[IsAuthenticated]
     )
-    return paginator.get_paginated_response(serializer.data)
-
-
-@require_GET
-def tags(request):
-    tag_list = TagSerializer(Tag.objects.all(), many=True).data
-
-    return JsonResponse(tag_list, safe=False)
-
-
-@require_GET
-def tag(request, tag_id):
-    tag = Tag.objects.filter(id=tag_id).first()
-    if not tag:
-        return JsonResponse(
-            {"detail": "Тег не найден"},
-            status=HTTPStatus.NOT_FOUND
-        )
-    return JsonResponse(TagSerializer(tag).data)
-
-
-class UserListView(APIView):
-    authentication_classes = []
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        request = auth_user(request)
-
+    def subscriptions(self, request):
+        qs = self.get_subscriptions_queryset()
         paginator = PagePagination()
-        paginator.page_size = request.GET.get(
-            "limit", constants.PAGINATE_COUNT)
-        queryset = User.objects.all()
-
-        result_page = paginator.paginate_queryset(queryset, request)
-        serializer = UserSerializer(
-            result_page, many=True, context={"request": request}
-        )
+        page = paginator.paginate_queryset(qs, request)
+        serializer = UserWithRecipesSerializer(
+            page, many=True, context={"request": request})
         return paginator.get_paginated_response(serializer.data)
 
-    def post(self, request):
-        field_errors = []
-
-        try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse(
-                {"field_name": ["Invalid JSON"]}, status=HTTPStatus.BAD_REQUEST
-            )
-
-        serializer = UserSerializer(
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(
             data=request.data, context={"request": request})
         if serializer.is_valid():
-            user = serializer.save()
+            try:
+                user = serializer.save()
+            except IntegrityError:
+                return Response(
+                    {"field_name": [
+                        (
+                            "Пользователь с таким email "
+                            "или username уже существует"
+                        )
+                    ]
+                    }, status=HTTPStatus.BAD_REQUEST
+                )
+            data = {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+            }
+            return Response(data, status=HTTPStatus.CREATED)
         else:
-            field_errors = [str(field[0]) for field in serializer.errors.values()]
-            return JsonResponse(
+            field_errors = [str(field[0])
+                            for field in serializer.errors.values()]
+            return Response(
                 {"field_name": field_errors},
                 status=HTTPStatus.BAD_REQUEST
             )
 
-        try:
-            data = {
-                "email": user.email,
-                "id": user.id,
-                "username": user.username,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-            }
+    @action(
+        detail=False,
+        methods=["put", "delete"],
+        permission_classes=[IsAuthenticated], url_path="me/avatar"
+    )
+    def avatar(self, request):
+        user = request.user
 
-            return JsonResponse(data, status=HTTPStatus.CREATED)
-        except IntegrityError:
-            return JsonResponse(
-                {"field_name": [
-                    "Пользователь с таким email или username уже существует"]},
-                status=HTTPStatus.BAD_REQUEST,
+        if request.method == "PUT":
+            serializer = AvatarSerializer(
+                user, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(
+                    {"avatar": user.avatar.url},
+                    status=HTTPStatus.OK
+                )
+            field_errors = [str(field[0])
+                            for field in serializer.errors.values()]
+            return Response(
+                {"field_name": field_errors},
+                status=HTTPStatus.BAD_REQUEST
             )
 
+        elif request.method == "DELETE":
+            if user.avatar:
+                user.avatar.delete(save=True)
+            return Response(status=HTTPStatus.NO_CONTENT)
 
-class UserView(APIView):
-    authentication_classes = []
+
+class TagViewSet(ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+    pagination_class = None
     permission_classes = [AllowAny]
-
-    def get(self, request, user_id):
-        request = auth_user(request)
-
-        user = User.objects.filter(id=user_id).first()
-
-        if not user:
-            return JsonResponse(
-                {"detail": "User does not exist"}, status=HTTPStatus.NOT_FOUND
-            )
-
-        return JsonResponse(UserSerializer(
-            user, context={"request": request}
-        ).data)
-
-
-class MeView(APIView):
-    def get(self, request):
-        return JsonResponse(
-            UserSerializer(request.user, context={"request": request}).data
-        )
+    authentication_classes = []
 
 
 def handle_user_recipe_relation(request, recipe_id, serializer_class,
@@ -606,3 +471,13 @@ def handle_user_recipe_relation(request, recipe_id, serializer_class,
                 status=HTTPStatus.BAD_REQUEST
             )
         return HttpResponse(status=HTTPStatus.NO_CONTENT)
+
+
+@api_view(["POST", "DELETE"])
+def favorite(request, recipe_id):
+    return handle_user_recipe_relation(
+        request, recipe_id,
+        serializer_class=FavoriteSerializer,
+        already_exists_msg="Рецепт уже в избранном",
+        not_in_relation_msg="Рецепт не в избранном"
+    )

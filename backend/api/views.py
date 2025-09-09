@@ -16,13 +16,13 @@ from api.serializers import (
     TagSerializer,
     UserSerializer,
     UserWithRecipesSerializer,
+    UserWriteSerializer
 )
 from django.db import IntegrityError
 from django.db.models import Count, Exists, OuterRef
 from django.http import (
     FileResponse,
     HttpResponse,
-    HttpResponseForbidden,
     JsonResponse
 )
 from django.shortcuts import redirect
@@ -43,6 +43,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action, api_view
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import (
@@ -241,6 +242,9 @@ class RecipeViewSet(ModelViewSet):
         return RecipeSerializer
 
     def create(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            raise AuthenticationFailed("No permission")
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         recipe = serializer.save(author=request.user)
@@ -255,6 +259,9 @@ class RecipeViewSet(ModelViewSet):
         )
 
     def update(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            raise AuthenticationFailed("No permission")
+
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(
@@ -267,14 +274,20 @@ class RecipeViewSet(ModelViewSet):
         return Response(read_serializer.data)
 
     def perform_update(self, serializer):
+        if not self.request.user.is_authenticated:
+            raise AuthenticationFailed("No permission")
+
         recipe = self.get_object()
         if recipe.author != self.request.user:
-            raise HttpResponseForbidden("No permission")
+            raise PermissionDenied("No permission")
         serializer.save()
 
     def perform_destroy(self, instance):
+        if not self.request.user.is_authenticated:
+            raise AuthenticationFailed("No permission")
+
         if instance.author != self.request.user:
-            raise HttpResponseForbidden("No permission")
+            raise PermissionDenied("No permission")
         instance.delete()
 
 
@@ -283,6 +296,7 @@ class UserViewSet(ModelViewSet):
     permission_classes = [AllowAny]
     authentication_classes = [TokenAuthentication]
     serializer_class = UserSerializer
+    pagination_class = PagePagination
 
     def get_subscriptions_queryset(self):
         return User.objects.filter(
@@ -299,7 +313,7 @@ class UserViewSet(ModelViewSet):
         permission_classes=[IsAuthenticated]
     )
     def me(self, request):
-        serializer = UserWithRecipesSerializer(
+        serializer = self.get_serializer(
             request.user, context={"request": request})
         return Response(serializer.data)
 
@@ -360,14 +374,14 @@ class UserViewSet(ModelViewSet):
     )
     def subscriptions(self, request):
         qs = self.get_subscriptions_queryset()
-        paginator = PagePagination()
+        paginator = self.pagination_class()
         page = paginator.paginate_queryset(qs, request)
         serializer = UserWithRecipesSerializer(
             page, many=True, context={"request": request})
         return paginator.get_paginated_response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(
+        serializer = UserWriteSerializer(
             data=request.data, context={"request": request})
         if serializer.is_valid():
             try:
@@ -428,7 +442,7 @@ class UserViewSet(ModelViewSet):
             return Response(status=HTTPStatus.NO_CONTENT)
 
 
-class TagViewSet(ModelViewSet):
+class TagViewSet(ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     pagination_class = None

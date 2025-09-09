@@ -30,7 +30,6 @@ class UserSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "is_subscribed",
-            "password",
             "avatar",
         ]
 
@@ -57,6 +56,34 @@ class UserSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class UserWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "email",
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "password",
+        ]
+
+    def validate_username(self, value):
+        valid = re.compile(r"^[\w.@+-]+\Z")
+
+        if not valid.match(value):
+            raise serializers.ValidationError("Username некорректный")
+        return value
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value
+
+    def create(self, validated_data):
+        validated_data["password"] = make_password(validated_data["password"])
+        return super().create(validated_data)
+
+
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
@@ -77,9 +104,9 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "measurement_unit", "amount"]
 
     def get_amount(self, obj):
-        return RecipeIngredient.objects.get(
+        return RecipeIngredient.objects.filter(
             ingredient=obj, recipe=self.context["recipe"]
-        ).amount
+        ).first().amount
 
 
 class IngredientSingleSerializer(serializers.ModelSerializer):
@@ -114,7 +141,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     Сериализатор для создания и обновления рецептов.
     Используется только для write операций.
     """
-    ingredients = IngredientAmountSerializer(many=True)
+    ingredients = IngredientAmountSerializer(many=True, write_only=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(), many=True)
     image = Base64ImageField(required=False, allow_null=True)
@@ -143,6 +170,21 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         ingredients_data = validated_data.pop("ingredients")
         tags = validated_data.pop("tags")
+
+        if not ingredients_data:
+            raise serializers.ValidationError(
+                "Нужно добавить хотя бы один ингредиент"
+            )
+
+        if not tags:
+            raise serializers.ValidationError(
+                "Нужно добавить хотя бы один тег"
+            )
+        
+        if not validated_data.get("image"):
+            raise serializers.ValidationError(
+                "Нужно добавить изображение"
+            )
 
         recipe = Recipe.objects.create(**validated_data)
         self.create_ingredients_and_tags(recipe, tags, ingredients_data)
@@ -192,10 +234,24 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 class UserWithRecipesSerializer(UserSerializer):
     recipes_count = serializers.IntegerField(read_only=True, default=0)
-    recipes = ShortRecipeSerializer(many=True, read_only=True)
+    recipes = serializers.SerializerMethodField(read_only=True)
 
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ["recipes", "recipes_count"]
+    
+    def get_recipes(self, obj):
+        request = self.context.get("request")
+        limit = request.query_params.get("recipes_limit") if request else None
+
+        recipes = obj.recipes.all()
+        if limit is not None:
+            try:
+                limit = int(limit)
+                recipes = recipes[:limit]
+            except ValueError:
+                pass
+
+        return ShortRecipeSerializer(recipes, many=True).data
 
 
 class SubscribtionSerializer(serializers.ModelSerializer):

@@ -11053,7 +11053,7 @@
 		},
 		{
 			"key": "password",
-			"value": "\"MySecretPas$word\"",
+			"value": "\"MySecretPas$word1\"",
 			"type": "string"
 		},
 		{

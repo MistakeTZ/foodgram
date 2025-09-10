@@ -69,6 +69,17 @@ class UserWriteSerializer(serializers.ModelSerializer):
             "password",
         ]
 
+    def validate(self, attrs):
+        if User.objects.filter(username=attrs.get("username")).exists():
+            raise serializers.ValidationError(
+                {"username": "Пользователь с таким username уже существует"},
+            )
+        if User.objects.filter(email=attrs.get("email")).exists():
+            raise serializers.ValidationError(
+                {"email": "Пользователь с таким email уже существует"},
+            )
+        return attrs
+
     def validate_username(self, value):
         valid = re.compile(r"^[\w.@+-]+\Z")
 
@@ -81,8 +92,7 @@ class UserWriteSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        validated_data["password"] = make_password(validated_data["password"])
-        return super().create(validated_data)
+        return User.objects.create_user(**validated_data)
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -272,10 +282,29 @@ class UserWithRecipesSerializer(UserSerializer):
 
 
 class SubscribtionSerializer(serializers.ModelSerializer):
+    author = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+
     class Meta:
         model = Subscribtion
-        fields = ("author", "user")
-        extra_kwargs = {"user": {"read_only": True}}
+        fields = ["author"]
+
+    def validate_author(self, author):
+        user = self.context["request"].user
+
+        if author == user:
+            raise serializers.ValidationError(
+                "Нельзя подписаться на самого себя",
+            )
+
+        if Subscribtion.objects.filter(user=user, author=author).exists():
+            raise serializers.ValidationError("Подписка уже существует")
+
+        return author
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        author = validated_data["author"]
+        return Subscribtion.objects.create(user=user, author=author)
 
 
 class BaseUserRecipeSerializer(serializers.ModelSerializer):

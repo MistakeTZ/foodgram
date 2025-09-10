@@ -63,9 +63,10 @@ class ShoppingCartViewSet(ViewSet):
         return handle_user_recipe_relation(
             request,
             pk,
-            serializer_class=CartSerializer,
-            already_exists_msg="Рецепт уже в корзине",
-            not_in_relation_msg="Рецепт не в корзине",
+            CartSerializer,
+            Cart,
+            "Рецепт уже в корзине",
+            "Рецепт не в корзине",
         )
 
     @action(detail=False, methods=["get"])
@@ -255,8 +256,7 @@ class RecipeViewSet(ModelViewSet):
         partial = kwargs.pop("partial", False)
         if partial:
             field_names = [
-                field
-                for field in [
+                field for field in [
                     "name",
                     "text",
                     "cooking_time",
@@ -283,9 +283,10 @@ class RecipeViewSet(ModelViewSet):
         return handle_user_recipe_relation(
             request,
             pk,
-            serializer_class=FavoriteSerializer,
-            already_exists_msg="Рецепт уже в избранном",
-            not_in_relation_msg="Рецепт не в избранном",
+            FavoriteSerializer,
+            Favorite,
+            "Рецепт уже в избранном",
+            "Рецепт не в избранном",
         )
 
 
@@ -293,8 +294,19 @@ class UserViewSet(ModelViewSet):
     queryset = User.objects.all()
     permission_classes = [AllowAny]
     authentication_classes = [TokenAuthentication]
-    serializer_class = UserSerializer
     pagination_class = PagePagination
+    serializer_class = UserSerializer
+
+    def get_serializer_class(self):
+        """Возвращает сериализатор в зависимости от действия."""
+
+        if self.action == "create":
+            return UserWriteSerializer
+        if self.action in ["subscribe", "subscriptions"]:
+            return UserWithRecipesSerializer
+        if self.action == "avatar":
+            return AvatarSerializer
+        return self.serializer_class
 
     def get_subscriptions_queryset(self):
         return User.objects.filter(
@@ -323,11 +335,9 @@ class UserViewSet(ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def subscribe(self, request, pk=None):
-        author = (
-            User.objects.filter(id=pk).annotate(
-                recipes_count=Count("recipes"),
-            ).first()
-        )
+        author = User.objects.filter(id=pk).annotate(
+            recipes_count=Count("recipes"),
+        ).first()
         if not author:
             return Response(
                 {"error": "Пользователь не найден"},
@@ -345,33 +355,16 @@ class UserViewSet(ModelViewSet):
                 )
             return Response(status=HTTPStatus.NO_CONTENT)
 
-        if author == request.user:
-            return Response(
-                {"error": "Нельзя подписаться на самого себя"},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-
-        if Subscribtion.objects.filter(
-            user=request.user,
-            author=author,
-        ).exists():
-            return Response(
-                {"error": "Подписка уже существует"},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-
         serializer = SubscribtionSerializer(
-            data={"author": author.id}, context={"request": request},
+            data={"author": author.id},
+            context={"request": request},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
+        serializer.save()
 
-        return Response(
-            UserWithRecipesSerializer(
-                author, context={"request": request},
-            ).data,
-            status=HTTPStatus.CREATED,
-        )
+        return Response(self.get_serializer(
+            author, context={"request": request},
+        ).data, status=HTTPStatus.CREATED)
 
     @action(
         detail=False,
@@ -382,38 +375,27 @@ class UserViewSet(ModelViewSet):
         qs = self.get_subscriptions_queryset()
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(qs, request)
-        serializer = UserWithRecipesSerializer(
+        serializer = self.get_serializer(
             page, many=True, context={"request": request},
         )
         return paginator.get_paginated_response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        serializer = UserWriteSerializer(
+        serializer = self.get_serializer(
             data=request.data, context={"request": request},
         )
         if serializer.is_valid():
-            try:
-                user = serializer.save()
-            except IntegrityError:
-                return Response(
-                    {
-                        "field_name": [
-                            (
-                                "Пользователь с таким email "
-                                "или username уже существует",
-                            ),
-                        ],
-                    },
-                    status=HTTPStatus.BAD_REQUEST,
-                )
-            data = {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-            }
-            return Response(data, status=HTTPStatus.CREATED)
+            user = serializer.save()
+            return Response(
+                {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                },
+                status=HTTPStatus.CREATED,
+            )
         else:
             field_errors = [
                 str(field[0]) for field in serializer.errors.values()
@@ -470,6 +452,7 @@ def handle_user_recipe_relation(
     request,
     recipe_id,
     serializer_class,
+    model_class,
     already_exists_msg="Рецепт уже добавлен",
     not_in_relation_msg="Рецепт не в списке",
 ):
@@ -498,7 +481,7 @@ def handle_user_recipe_relation(
         )
 
     if request.method == "DELETE":
-        deleted, _ = serializer_class.Meta.model.objects.filter(
+        deleted, _ = model_class.objects.filter(
             user=request.user, recipe=recipe,
         ).delete()
         if not deleted:

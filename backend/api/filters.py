@@ -28,8 +28,8 @@ class IngredientFilter(django_filters.FilterSet):
 class RecipeFilter(django_filters.FilterSet):
     author = django_filters.NumberFilter(field_name="author__id")
     tags = django_filters.CharFilter(method="filter_tags")
-    is_favorited = django_filters.BooleanFilter(method="filter_favorited")
-    is_in_shopping_cart = django_filters.BooleanFilter(
+    is_favorited = django_filters.CharFilter(method="filter_favorited")
+    is_in_shopping_cart = django_filters.CharFilter(
         method="filter_shopping_cart",
     )
 
@@ -56,7 +56,7 @@ class RecipeFilter(django_filters.FilterSet):
         """Фильтрация избранных рецептов."""
 
         user = self.request.user
-        if value and user.is_authenticated:
+        if value == "1" and user.is_authenticated:
             return queryset.filter(
                 id__in=Favorite.objects.filter(user=user).values_list(
                     "recipe_id", flat=True,
@@ -68,7 +68,7 @@ class RecipeFilter(django_filters.FilterSet):
         """Фильтрация рецептов в корзине."""
 
         user = self.request.user
-        if value and user.is_authenticated:
+        if value == "1" and user.is_authenticated:
             return queryset.filter(
                 id__in=Cart.objects.filter(user=user).values_list(
                     "recipe_id", flat=True,

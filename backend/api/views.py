@@ -43,7 +43,11 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action, api_view
-from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
+from rest_framework.exceptions import (
+    AuthenticationFailed,
+    PermissionDenied,
+    ParseError
+)
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import (
@@ -263,6 +267,16 @@ class RecipeViewSet(ModelViewSet):
             raise AuthenticationFailed("No permission")
 
         partial = kwargs.pop("partial", False)
+        if partial:
+            field_names = [
+                field for field in [
+                    "name", "text", "cooking_time",
+                    "ingredients", "tags"
+                ] if field not in request.data
+            ]
+            if field_names:
+                raise ParseError({"field_name": field_names})
+
         instance = self.get_object()
         serializer = self.get_serializer(
             instance, data=request.data, partial=partial)

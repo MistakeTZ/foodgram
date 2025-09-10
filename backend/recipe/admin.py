@@ -1,11 +1,12 @@
 from django.contrib import admin
+
 from recipe import models
 
 
 @admin.register(models.Tag)
 class TagAdmin(admin.ModelAdmin):
     list_display = ("name",)
-    search_fields = ("name", "slug",)
+    search_fields = ("name", "slug")
 
 
 @admin.register(models.Ingredient)
@@ -28,7 +29,7 @@ class RecipeAdmin(admin.ModelAdmin):
 
     def added_in_favorites(self, obj):
         count = models.Favorite.objects.filter(
-            recipe=obj
+            recipe=obj,
         ).count()
         return count
 

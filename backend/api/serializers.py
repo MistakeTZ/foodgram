@@ -5,15 +5,16 @@ from uuid import uuid4
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
+from rest_framework import serializers
+
 from recipe.models import (
     Cart,
     Favorite,
     Ingredient,
     Recipe,
     RecipeIngredient,
-    Tag
+    Tag,
 )
-from rest_framework import serializers
 from users.models import Subscribtion, User
 
 
@@ -48,7 +49,7 @@ class UserSerializer(serializers.ModelSerializer):
         if not self.context["request"].user.is_authenticated:
             return False
         return Subscribtion.objects.filter(
-            author=obj, user=self.context["request"].user
+            author=obj, user=self.context["request"].user,
         ).exists()
 
     def create(self, validated_data):
@@ -104,9 +105,13 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "measurement_unit", "amount"]
 
     def get_amount(self, obj):
-        return RecipeIngredient.objects.filter(
-            ingredient=obj, recipe=self.context["recipe"]
-        ).first().amount
+        return (
+            RecipeIngredient.objects.filter(
+                ingredient=obj, recipe=self.context["recipe"],
+            )
+            .first()
+            .amount
+        )
 
 
 class IngredientSingleSerializer(serializers.ModelSerializer):
@@ -127,29 +132,43 @@ class Base64ImageField(serializers.ImageField):
                 data = ContentFile(base64.b64decode(imgstr), name=file_name)
             except (ValueError, IndexError, TypeError, base64.binascii.Error):
                 raise serializers.ValidationError(
-                    "Не удалось загрузить изображение")
+                    "Не удалось загрузить изображение",
+                )
         return super().to_internal_value(data)
 
 
 class IngredientAmountSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
+    id = serializers.IntegerField()  # noqa VNE003
     amount = serializers.IntegerField(min_value=1)
 
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     """
     Сериализатор для создания и обновления рецептов.
+
     Используется только для write операций.
     """
-    ingredients = IngredientAmountSerializer(many=True, write_only=True)
+
+    ingredients = IngredientAmountSerializer(
+        many=True,
+        write_only=True,
+    )
     tags = serializers.PrimaryKeyRelatedField(
-        queryset=Tag.objects.all(), many=True)
+        queryset=Tag.objects.all(),
+        many=True,
+    )
     image = Base64ImageField(required=False, allow_null=True)
 
     class Meta:
         model = Recipe
-        fields = ["name", "text", "cooking_time",
-                  "image", "ingredients", "tags"]
+        fields = [
+            "name",
+            "text",
+            "cooking_time",
+            "image",
+            "ingredients",
+            "tags",
+        ]
 
     def create_ingredients_and_tags(self, recipe, tags, ingredients_data):
         recipe.tags.set(tags)
@@ -158,7 +177,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             RecipeIngredient(
                 recipe=recipe,
                 ingredient_id=item["id"],
-                amount=item["amount"]
+                amount=item["amount"],
             )
             for item in ingredients_data
         ]
@@ -173,18 +192,16 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
 
         if not ingredients_data:
             raise serializers.ValidationError(
-                "Нужно добавить хотя бы один ингредиент"
+                "Нужно добавить хотя бы один ингредиент",
             )
 
         if not tags:
             raise serializers.ValidationError(
-                "Нужно добавить хотя бы один тег"
+                "Нужно добавить хотя бы один тег",
             )
 
         if not validated_data.get("image"):
-            raise serializers.ValidationError(
-                "Нужно добавить изображение"
-            )
+            raise serializers.ValidationError("Нужно добавить изображение")
 
         recipe = Recipe.objects.create(**validated_data)
         self.create_ingredients_and_tags(recipe, tags, ingredients_data)
@@ -228,7 +245,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def get_ingredients(self, obj):
         return IngredientSerializer(
-            obj.ingredients.all(), many=True, context={"recipe": obj}
+            obj.ingredients.all(), many=True, context={"recipe": obj},
         ).data
 
 
@@ -245,11 +262,9 @@ class UserWithRecipesSerializer(UserSerializer):
 
         recipes = obj.recipes.all()
         if limit is not None:
-            try:
+            if isinstance(limit, str) and limit.isdigit():
                 limit = int(limit)
                 recipes = recipes[:limit]
-            except ValueError:
-                pass
 
         return ShortRecipeSerializer(recipes, many=True).data
 
@@ -261,16 +276,33 @@ class SubscribtionSerializer(serializers.ModelSerializer):
         extra_kwargs = {"user": {"read_only": True}}
 
 
-class FavoriteSerializer(serializers.ModelSerializer):
+class BaseUserRecipeSerializer(serializers.ModelSerializer):
+    """Базовый сериализатор для моделей с полями user и recipe."""
+
     class Meta:
+        fields = ("user", "recipe")
+        abstract = True
+
+    def validate(self, data):
+        model = self.Meta.model
+        user = data["user"]
+        recipe = data["recipe"]
+
+        if model.objects.filter(user=user, recipe=recipe).exists():
+            raise serializers.ValidationError(
+                f"Этот рецепт уже есть в {model.__name__}.",
+            )
+        return data
+
+
+class FavoriteSerializer(BaseUserRecipeSerializer):
+    class Meta(BaseUserRecipeSerializer.Meta):
         model = Favorite
-        fields = ("user", "recipe")
 
 
-class CartSerializer(serializers.ModelSerializer):
-    class Meta:
+class CartSerializer(BaseUserRecipeSerializer):
+    class Meta(BaseUserRecipeSerializer.Meta):
         model = Cart
-        fields = ("user", "recipe")
 
 
 class AvatarSerializer(serializers.ModelSerializer):

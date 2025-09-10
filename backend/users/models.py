@@ -1,7 +1,8 @@
-from app import constants
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+
+from app import constants
 
 
 def user_avatar_path(instance, filename):
@@ -46,7 +47,7 @@ class User(AbstractUser):
         "username",
         "first_name",
         "last_name",
-        "password"
+        "password",
     ]
 
     class Meta:
@@ -74,8 +75,8 @@ class Subscribtion(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "author"], name="unique_subscription"
-            )
+                fields=["user", "author"], name="unique_subscription",
+            ),
         ]
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"

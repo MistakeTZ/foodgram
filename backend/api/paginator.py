@@ -1,5 +1,6 @@
-from app import constants
 from rest_framework.pagination import PageNumberPagination
+
+from app import constants
 
 
 class PagePagination(PageNumberPagination):

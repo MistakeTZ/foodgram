@@ -8,11 +8,11 @@ SECRET_KEY = getenv("DJANGO_SECRET_KEY", "fallback-secret-key")
 DEBUG = getenv("DJANGO_DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = getenv("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost,backend").split(
-    ","
+    "," # noqa C812
 )
 
 CSRF_TRUSTED_ORIGINS = getenv("DJANGO_CSRF_TRUSTED_HOSTS", "http://127.0.0.1,http://localhost").split(
-    ","
+    "," # noqa C812
 )
 
 # Application definition
@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_filters",
     "rest_framework",
     "rest_framework.authtoken",
     "djoser",
@@ -68,6 +69,11 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.OrderingFilter",
+        "rest_framework.filters.SearchFilter",
+    ],
 }
 
 WSGI_APPLICATION = "app.wsgi.application"
@@ -80,7 +86,7 @@ DATABASES = {
         "PASSWORD": getenv("POSTGRES_PASSWORD", "postgres"),
         "HOST": getenv("POSTGRES_HOST") or "db",
         "PORT": getenv("POSTGRES_PORT") or "5432",
-    }
+    },
 }
 
 AUTH_USER_MODEL = "users.User"

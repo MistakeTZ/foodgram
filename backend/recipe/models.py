@@ -1,7 +1,8 @@
-from app import constants
 from django.core.validators import MinValueValidator
 from django.db import models
 from slugify import slugify
+
+from app import constants
 from users.models import User
 
 
@@ -9,13 +10,13 @@ class Tag(models.Model):
     name = models.CharField(
         max_length=constants.MAX_TAG_NAME_LENGTH,
         unique=True,
-        verbose_name="Название"
+        verbose_name="Название",
     )
     slug = models.SlugField(
         max_length=constants.MAX_TAG_SLUG_LENGTH,
         unique=True,
         blank=True,
-        verbose_name="Слаг"
+        verbose_name="Слаг",
     )
 
     class Meta:
@@ -34,11 +35,11 @@ class Tag(models.Model):
 class Ingredient(models.Model):
     name = models.CharField(
         max_length=constants.MAX_INGREDIENT_NAME_LENGTH,
-        verbose_name="Название ингредиента"
+        verbose_name="Название ингредиента",
     )
     measurement_unit = models.CharField(
         max_length=constants.MAX_MEASUREMENT_UNIT_LENGTH,
-        verbose_name="Единица измерения"
+        verbose_name="Единица измерения",
     )
 
     class Meta:
@@ -58,23 +59,27 @@ class Recipe(models.Model):
     )
     name = models.CharField(
         max_length=constants.MAX_RECIPE_TITLE_LENGTH,
-        verbose_name="Название"
+        verbose_name="Название",
     )
     image = models.ImageField(
         upload_to="images/recipes/",
-        verbose_name="Изображение"
+        verbose_name="Изображение",
     )
     text = models.TextField(verbose_name="Описание")
     ingredients = models.ManyToManyField(
         Ingredient,
         through="RecipeIngredient",
-        verbose_name="Ингредиенты"
+        verbose_name="Ингредиенты",
     )
     tags = models.ManyToManyField(Tag, verbose_name="Теги")
     cooking_time = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1)],
         help_text="Время приготовления в минутах",
-        verbose_name="Время приготовления"
+        verbose_name="Время приготовления",
+    )
+    created = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Дата создания",
     )
 
     class Meta:
@@ -90,11 +95,13 @@ class UserRecipeRelation(models.Model):
         User,
         on_delete=models.CASCADE,
         verbose_name="Пользователь",
+        related_name="%(class)s_set",
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
         verbose_name="Рецепт",
+        related_name="%(class)s_set",
     )
 
     class Meta:
@@ -102,8 +109,8 @@ class UserRecipeRelation(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["user", "recipe"],
-                name="unique_user_recipe_relation",
-            )
+                name="unique_%(class)s_relation",
+            ),
         ]
 
     def __str__(self):
@@ -111,27 +118,15 @@ class UserRecipeRelation(models.Model):
 
 
 class Favorite(UserRecipeRelation):
-    class Meta:
+    class Meta(UserRecipeRelation.Meta):
         verbose_name = "Избранное"
         verbose_name_plural = "Избранные рецепты"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["user", "recipe"],
-                name="unique_favorite_relation",
-            )
-        ]
 
 
 class Cart(UserRecipeRelation):
-    class Meta:
+    class Meta(UserRecipeRelation.Meta):
         verbose_name = "Корзина"
         verbose_name_plural = "Список покупок"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["user", "recipe"],
-                name="unique_cart_relation",
-            )
-        ]
 
 
 class RecipeIngredient(models.Model):

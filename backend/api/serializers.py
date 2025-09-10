@@ -180,7 +180,7 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Нужно добавить хотя бы один тег"
             )
-        
+
         if not validated_data.get("image"):
             raise serializers.ValidationError(
                 "Нужно добавить изображение"
@@ -238,7 +238,7 @@ class UserWithRecipesSerializer(UserSerializer):
 
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ["recipes", "recipes_count"]
-    
+
     def get_recipes(self, obj):
         request = self.context.get("request")
         limit = request.query_params.get("recipes_limit") if request else None

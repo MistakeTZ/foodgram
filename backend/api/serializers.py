@@ -203,7 +203,9 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         if not validated_data.get("image"):
             raise serializers.ValidationError("Нужно добавить изображение")
 
-        recipe = Recipe.objects.create(**validated_data)
+        user = self.context["request"].user
+
+        recipe = Recipe.objects.create(author=user, **validated_data)
         self.create_ingredients_and_tags(recipe, tags, ingredients_data)
         return recipe
 

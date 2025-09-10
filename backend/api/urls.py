@@ -40,11 +40,6 @@ urlpatterns = [
         name="get_link",
     ),
     path(
-        "recipes/<int:recipe_id>/favorite/",
-        views.favorite,
-        name="favorite",
-    ),
-    path(
         "recipes/<int:pk>/shopping_cart/",
         views.ShoppingCartViewSet.as_view(
             {"post": "recipes", "delete": "recipes"},

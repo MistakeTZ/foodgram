@@ -22,9 +22,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action
 from rest_framework.exceptions import (
-    AuthenticationFailed,
     PermissionDenied,
     ParseError,
 )
@@ -212,32 +211,47 @@ class RecipeViewSet(ModelViewSet):
 
         return qs
 
+    def get_object(self):
+        obj = super().get_object()
+        if self.action in ["update", "partial_update", "destroy"]:
+            if obj.author != self.request.user:
+                raise PermissionDenied(
+                    "Вы можете изменять только свои рецепты",
+                )
+        return obj
+
+    def get_permissions(self):
+        if self.action in [
+            "create",
+            "update",
+            "partial_update",
+            "delete",
+            "post",
+        ]:
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
     def get_serializer_class(self):
         if self.action in ["create", "update", "partial_update"]:
             return RecipeCreateUpdateSerializer
         return RecipeSerializer
 
     def create(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            raise AuthenticationFailed("No permission")
-
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        recipe = serializer.save(author=request.user)
+        response = super().create(request, *args, **kwargs)
+        self.get_serializer().instance
+        recipe = Recipe.objects.filter(author=request.user).last()
 
         read_serializer = RecipeSerializer(
             recipe,
             context={"request": request},
         )
-        headers = self.get_success_headers(read_serializer.data)
         return Response(
-            read_serializer.data, status=HTTPStatus.CREATED, headers=headers,
+            read_serializer.data,
+            status=HTTPStatus.CREATED,
+            headers=response.headers,
         )
 
     def update(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            raise AuthenticationFailed("No permission")
-
         partial = kwargs.pop("partial", False)
         if partial:
             field_names = [
@@ -254,14 +268,8 @@ class RecipeViewSet(ModelViewSet):
             if field_names:
                 raise ParseError({"field_name": field_names})
 
-        instance = self.get_object()
-        serializer = self.get_serializer(
-            instance,
-            data=request.data,
-            partial=partial,
-        )
-        serializer.is_valid(raise_exception=True)
-        recipe = serializer.save()
+        super().update(request, *args, **kwargs)
+        recipe = self.get_object()
 
         read_serializer = RecipeSerializer(
             recipe,
@@ -269,22 +277,16 @@ class RecipeViewSet(ModelViewSet):
         )
         return Response(read_serializer.data)
 
-    def perform_update(self, serializer):
-        if not self.request.user.is_authenticated:
-            raise AuthenticationFailed("No permission")
-
-        recipe = self.get_object()
-        if recipe.author != self.request.user:
-            raise PermissionDenied("No permission")
-        serializer.save()
-
-    def perform_destroy(self, instance):
-        if not self.request.user.is_authenticated:
-            raise AuthenticationFailed("No permission")
-
-        if instance.author != self.request.user:
-            raise PermissionDenied("No permission")
-        instance.delete()
+    @action(detail=True, methods=["post", "delete"], url_path="favorite")
+    def favorite(self, request, pk=None):
+        """Добавить/удалить рецепт из избранного."""
+        return handle_user_recipe_relation(
+            request,
+            pk,
+            serializer_class=FavoriteSerializer,
+            already_exists_msg="Рецепт уже в избранном",
+            not_in_relation_msg="Рецепт не в избранном",
+        )
 
 
 class UserViewSet(ModelViewSet):
@@ -504,14 +506,3 @@ def handle_user_recipe_relation(
                 {"error": not_in_relation_msg}, status=HTTPStatus.BAD_REQUEST,
             )
         return HttpResponse(status=HTTPStatus.NO_CONTENT)
-
-
-@api_view(["POST", "DELETE"])
-def favorite(request, recipe_id):
-    return handle_user_recipe_relation(
-        request,
-        recipe_id,
-        serializer_class=FavoriteSerializer,
-        already_exists_msg="Рецепт уже в избранном",
-        not_in_relation_msg="Рецепт не в избранном",
-    )

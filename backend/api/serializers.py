@@ -273,7 +273,6 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         ingredients_data = validated_data.pop("ingredients", None)
         tags = validated_data.pop("tags", None)
 
-        # Обновляем основные поля
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()

@@ -222,7 +222,6 @@ class RecipeViewSet(ModelViewSet):
 
         recipe = write_serializer.save()
 
-        # Возвращаем данные через read-serializer
         read_serializer = RecipeSerializer(
             recipe,
             context={"request": request},
@@ -249,7 +248,6 @@ class RecipeViewSet(ModelViewSet):
 
         recipe = write_serializer.save()
 
-        # Возвращаем данные через read-serializer
         read_serializer = RecipeSerializer(
             recipe,
             context={"request": request},

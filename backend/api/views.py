@@ -5,28 +5,16 @@ from http import HTTPStatus
 from django.db import IntegrityError
 from django.db.models import Count, Exists, OuterRef
 from django.http import FileResponse, HttpResponse, JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-from recipe.models import (
-    Cart,
-    Favorite,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    Tag,
-)
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
-from rest_framework.exceptions import (
-    PermissionDenied,
-    ParseError,
-)
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -51,6 +39,14 @@ from api.serializers import (
     UserSerializer,
     UserWithRecipesSerializer,
     UserWriteSerializer,
+)
+from recipe.models import (
+    Cart,
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    Tag,
 )
 from users.models import Subscribtion, User
 
@@ -157,11 +153,7 @@ class ShortLinkViewSet(ViewSet):
 
     @action(detail=True, methods=["get"])
     def get_link(self, request, recipe_id=None):
-        recipe = Recipe.objects.filter(id=recipe_id).exists()
-        if not recipe:
-            return JsonResponse(
-                {"detail": "Recipe not found"}, status=HTTPStatus.NOT_FOUND,
-            )
+        get_object_or_404(Recipe, id=recipe_id)
 
         link = hex(recipe_id)
         short_url = request.build_absolute_uri(
@@ -169,7 +161,6 @@ class ShortLinkViewSet(ViewSet):
         )
         return JsonResponse(
             {"short-link": short_url},
-            status=200,
         )
 
     @action(detail=True, methods=["get"])
@@ -212,69 +203,58 @@ class RecipeViewSet(ModelViewSet):
 
         return qs
 
-    def get_object(self):
-        obj = super().get_object()
-        if self.action in ["update", "partial_update", "destroy"]:
-            if obj.author != self.request.user:
-                raise PermissionDenied(
-                    "Вы можете изменять только свои рецепты",
-                )
-        return obj
-
     def get_permissions(self):
-        if self.action in [
-            "create",
-            "update",
-            "partial_update",
-            "delete",
-            "post",
-        ]:
+        """Определение прав доступа в зависимости от действия."""
+        if self.action in ["create", "update", "partial_update", "destroy"]:
             return [IsAuthenticated()]
         return super().get_permissions()
 
     def get_serializer_class(self):
+        """Выбор сериализатора в зависимости от действия."""
         if self.action in ["create", "update", "partial_update"]:
             return RecipeCreateUpdateSerializer
         return RecipeSerializer
 
     def create(self, request, *args, **kwargs):
-        response = super().create(request, *args, **kwargs)
-        self.get_serializer().instance
-        recipe = Recipe.objects.filter(author=request.user).last()
+        """Создание рецепта с возвратом read-serializer данных."""
+        write_serializer = self.get_serializer(data=request.data)
+        write_serializer.is_valid(raise_exception=True)
 
+        recipe = write_serializer.save()
+
+        # Возвращаем данные через read-serializer
         read_serializer = RecipeSerializer(
             recipe,
             context={"request": request},
         )
+
+        headers = self.get_success_headers(write_serializer.data)
         return Response(
             read_serializer.data,
             status=HTTPStatus.CREATED,
-            headers=response.headers,
+            headers=headers,
         )
 
     def update(self, request, *args, **kwargs):
+        """Обновление рецепта с возвратом read-serializer данных."""
         partial = kwargs.pop("partial", False)
-        if partial:
-            field_names = [
-                field for field in [
-                    "name",
-                    "text",
-                    "cooking_time",
-                    "ingredients",
-                    "tags",
-                ]
-                if field not in request.data
-            ]
-            if field_names:
-                raise ParseError({"field_name": field_names})
+        instance = self.get_object()
 
-        super().update(request, *args, **kwargs)
-        recipe = self.get_object()
+        write_serializer = self.get_serializer(
+            instance,
+            data=request.data,
+            partial=partial,
+        )
+        write_serializer.is_valid(raise_exception=True)
 
+        recipe = write_serializer.save()
+
+        # Возвращаем данные через read-serializer
         read_serializer = RecipeSerializer(
             recipe,
             context={"request": request},
         )
+
         return Response(read_serializer.data)
 
     @action(detail=True, methods=["post", "delete"], url_path="favorite")
@@ -335,14 +315,12 @@ class UserViewSet(ModelViewSet):
         permission_classes=[IsAuthenticated],
     )
     def subscribe(self, request, pk=None):
-        author = User.objects.filter(id=pk).annotate(
-            recipes_count=Count("recipes"),
-        ).first()
-        if not author:
-            return Response(
-                {"error": "Пользователь не найден"},
-                status=HTTPStatus.NOT_FOUND,
-            )
+        author = get_object_or_404(
+            User.objects.annotate(
+                recipes_count=Count("recipes"),
+            ),
+            id=pk,
+        )
 
         if request.method == "DELETE":
             deleted, _ = Subscribtion.objects.filter(
@@ -456,12 +434,7 @@ def handle_user_recipe_relation(
     already_exists_msg="Рецепт уже добавлен",
     not_in_relation_msg="Рецепт не в списке",
 ):
-    recipe = Recipe.objects.filter(id=recipe_id).first()
-    if not recipe:
-        return JsonResponse(
-            {"error": "Рецепт не найден"},
-            status=HTTPStatus.NOT_FOUND,
-        )
+    recipe = get_object_or_404(Recipe, id=recipe_id)
 
     if request.method == "POST":
         try:

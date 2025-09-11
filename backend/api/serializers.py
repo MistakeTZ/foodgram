@@ -5,6 +5,7 @@ from uuid import uuid4
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework import serializers
 
 from recipe.models import (
@@ -38,7 +39,9 @@ class UserSerializer(serializers.ModelSerializer):
         valid = re.compile(r"^[\w.@+-]+\Z")
 
         if not valid.match(value):
-            raise serializers.ValidationError("Username некорректный")
+            raise ValidationError({
+                "field_name": ["Username некорректный"],
+            })
         return value
 
     def validate_password(self, value):
@@ -71,20 +74,23 @@ class UserWriteSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if User.objects.filter(username=attrs.get("username")).exists():
-            raise serializers.ValidationError(
-                {"username": "Пользователь с таким username уже существует"},
-            )
+            raise ValidationError({
+                "field_name":
+                ["Пользователь с таким username уже существует"],
+            })
         if User.objects.filter(email=attrs.get("email")).exists():
-            raise serializers.ValidationError(
-                {"email": "Пользователь с таким email уже существует"},
-            )
+            raise ValidationError({
+                "field_name": ["Пользователь с таким email уже существует"],
+            })
         return attrs
 
     def validate_username(self, value):
         valid = re.compile(r"^[\w.@+-]+\Z")
 
         if not valid.match(value):
-            raise serializers.ValidationError("Username некорректный")
+            raise ValidationError({
+                "field_name": ["Username некорректный"],
+            })
         return value
 
     def validate_password(self, value):
@@ -141,9 +147,9 @@ class Base64ImageField(serializers.ImageField):
                 file_name = f"{uuid4()}.{ext}"
                 data = ContentFile(base64.b64decode(imgstr), name=file_name)
             except (ValueError, IndexError, TypeError, base64.binascii.Error):
-                raise serializers.ValidationError(
-                    "Не удалось загрузить изображение",
-                )
+                raise ValidationError({
+                    "field_name": ["Не удалось загрузить изображение"],
+                })
         return super().to_internal_value(data)
 
 
@@ -153,11 +159,7 @@ class IngredientAmountSerializer(serializers.Serializer):
 
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
-    """
-    Сериализатор для создания и обновления рецептов.
-
-    Используется только для write операций.
-    """
+    """Сериализатор для создания и обновления рецептов для write операций."""
 
     ingredients = IngredientAmountSerializer(
         many=True,
@@ -180,7 +182,66 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             "tags",
         ]
 
+    def validate_ingredients(self, value):
+        """Валидация ингредиентов."""
+        if not value:
+            raise ValidationError({
+                "field_name":
+                ["Нужно добавить хотя бы один ингредиент"],
+            })
+        return value
+
+    def validate_tags(self, value):
+        """Валидация тегов."""
+        if not value:
+            raise ValidationError({
+                "field_name": ["Нужно добавить хотя бы один тег"],
+            })
+        return value
+
+    def validate_image(self, value):
+        """Валидация изображения для создания."""
+        if self.instance is None and not value:
+            raise ValidationError({
+                "field_name": ["Нужно добавить изображение"],
+            })
+        return value
+
+    def validate(self, attrs):
+        """Общая валидация."""
+        if self.partial and self.instance:
+            required_fields = [
+                "name",
+                "text",
+                "cooking_time",
+                "ingredients",
+                "tags",
+            ]
+            missing_fields = []
+
+            for field in required_fields:
+                if field not in attrs and not getattr(
+                    self.instance,
+                    field,
+                    None,
+                ):
+                    missing_fields.append(field)
+
+            if missing_fields:
+                raise ValidationError({
+                    "field_name":
+                    [f"Обязательные поля отсутствуют: {missing_fields}"],
+                })
+
+        return attrs
+
+    def validate_permissions(self, instance=None):
+        """Проверка прав доступа для обновления."""
+        if instance and instance.author != self.context["request"].user:
+            raise PermissionDenied("Нельзя редактировать чужой рецепт")
+
     def create_ingredients_and_tags(self, recipe, tags, ingredients_data):
+        """Создание связанных ингредиентов и тегов."""
         recipe.tags.set(tags)
 
         recipe_ingredients = [
@@ -193,40 +254,38 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
         ]
 
         RecipeIngredient.objects.bulk_create(recipe_ingredients)
-
         return recipe
 
     def create(self, validated_data):
+        """Создание рецепта."""
         ingredients_data = validated_data.pop("ingredients")
         tags = validated_data.pop("tags")
+        author = self.context["request"].user
 
-        if not ingredients_data:
-            raise serializers.ValidationError(
-                "Нужно добавить хотя бы один ингредиент",
-            )
-
-        if not tags:
-            raise serializers.ValidationError(
-                "Нужно добавить хотя бы один тег",
-            )
-
-        if not validated_data.get("image"):
-            raise serializers.ValidationError("Нужно добавить изображение")
-
-        user = self.context["request"].user
-
-        recipe = Recipe.objects.create(author=user, **validated_data)
+        recipe = Recipe.objects.create(author=author, **validated_data)
         self.create_ingredients_and_tags(recipe, tags, ingredients_data)
         return recipe
 
     def update(self, instance, validated_data):
+        """Обновление рецепта."""
+        self.validate_permissions(instance)
+
         ingredients_data = validated_data.pop("ingredients", None)
         tags = validated_data.pop("tags", None)
 
-        super().update(instance, validated_data)
+        # Обновляем основные поля
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
 
-        RecipeIngredient.objects.filter(recipe=instance).delete()
-        self.create_ingredients_and_tags(instance, tags, ingredients_data)
+        if ingredients_data is not None or tags is not None:
+            if ingredients_data is not None:
+                RecipeIngredient.objects.filter(recipe=instance).delete()
+            self.create_ingredients_and_tags(
+                instance,
+                tags if tags is not None else instance.tags.all(),
+                ingredients_data or [],
+            )
 
         return instance
 
@@ -292,12 +351,12 @@ class SubscribtionSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
 
         if author == user:
-            raise serializers.ValidationError(
+            raise ValidationError(
                 "Нельзя подписаться на самого себя",
             )
 
         if Subscribtion.objects.filter(user=user, author=author).exists():
-            raise serializers.ValidationError("Подписка уже существует")
+            raise ValidationError("Подписка уже существует")
 
         return author
 
@@ -320,7 +379,7 @@ class BaseUserRecipeSerializer(serializers.ModelSerializer):
         recipe = data["recipe"]
 
         if model.objects.filter(user=user, recipe=recipe).exists():
-            raise serializers.ValidationError(
+            raise ValidationError(
                 f"Этот рецепт уже есть в {model.__name__}.",
             )
         return data

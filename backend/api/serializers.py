@@ -2,7 +2,6 @@ import base64
 import re
 from uuid import uuid4
 
-from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.files.base import ContentFile
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -19,10 +18,7 @@ from recipe.models import (
 from users.models import Subscribtion, User
 
 
-class UserSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.SerializerMethodField()
-    avatar = serializers.ImageField(use_url=True, read_only=True)
-
+class UserShortSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
@@ -31,6 +27,15 @@ class UserSerializer(serializers.ModelSerializer):
             "username",
             "first_name",
             "last_name",
+        ]
+
+
+class UserSerializer(UserShortSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+    avatar = serializers.ImageField(use_url=True, read_only=True)
+
+    class Meta(UserShortSerializer.Meta):
+        fields = UserShortSerializer.Meta.fields + [
             "is_subscribed",
             "avatar",
         ]
@@ -54,10 +59,6 @@ class UserSerializer(serializers.ModelSerializer):
         return Subscribtion.objects.filter(
             author=obj, user=self.context["request"].user,
         ).exists()
-
-    def create(self, validated_data):
-        validated_data["password"] = make_password(validated_data["password"])
-        return super().create(validated_data)
 
 
 class UserWriteSerializer(serializers.ModelSerializer):
@@ -99,6 +100,10 @@ class UserWriteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
+
+    def to_representation(self, instance):
+        """Return representation using the read serializer."""
+        return UserShortSerializer(instance, context=self.context).data
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -157,6 +162,15 @@ class IngredientAmountSerializer(serializers.Serializer):
     id = serializers.IntegerField()  # noqa VNE003
     amount = serializers.IntegerField(min_value=1)
 
+    def validate_id(self, value):
+        """Validate that ingredient exists."""
+        if not Ingredient.objects.filter(id=value).exists():
+            raise ValidationError({
+                "field_name":
+                ["Ингредиента с таким id не существует"],
+            })
+        return value
+
 
 class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания и обновления рецептов для write операций."""
@@ -182,12 +196,46 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             "tags",
         ]
 
+    def validate(self, attrs):
+        """Общая валидация."""
+        if self.instance is None:
+            if not attrs.get("image"):
+                raise ValidationError({
+                    "field_name": ["Нужно добавить изображение"],
+                })
+
+        else:
+            required_fields = [
+                "name",
+                "text",
+                "cooking_time",
+                "ingredients",
+                "tags",
+            ]
+            missing_fields = [
+                field for field in required_fields if field not in attrs
+            ]
+
+            if missing_fields:
+                raise ValidationError({
+                    "field_name":
+                    [f"Обязательные поля отсутствуют: {missing_fields}"],
+                })
+
+        return attrs
+
     def validate_ingredients(self, value):
         """Валидация ингредиентов."""
         if not value:
             raise ValidationError({
                 "field_name":
                 ["Нужно добавить хотя бы один ингредиент"],
+            })
+
+        ingredient_ids = [item["id"] for item in value]
+        if len(ingredient_ids) != len(set(ingredient_ids)):
+            raise ValidationError({
+                "field_name": ["Ингредиенты не должны повторяться"],
             })
         return value
 
@@ -197,43 +245,13 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             raise ValidationError({
                 "field_name": ["Нужно добавить хотя бы один тег"],
             })
-        return value
 
-    def validate_image(self, value):
-        """Валидация изображения для создания."""
-        if self.instance is None and not value:
+        tag_ids = [item.id for item in value]
+        if len(tag_ids) != len(set(tag_ids)):
             raise ValidationError({
-                "field_name": ["Нужно добавить изображение"],
+                "field_name": ["Теги не должны повторяться"],
             })
         return value
-
-    def validate(self, attrs):
-        """Общая валидация."""
-        if self.partial and self.instance:
-            required_fields = [
-                "name",
-                "text",
-                "cooking_time",
-                "ingredients",
-                "tags",
-            ]
-            missing_fields = []
-
-            for field in required_fields:
-                if field not in attrs and not getattr(
-                    self.instance,
-                    field,
-                    None,
-                ):
-                    missing_fields.append(field)
-
-            if missing_fields:
-                raise ValidationError({
-                    "field_name":
-                    [f"Обязательные поля отсутствуют: {missing_fields}"],
-                })
-
-        return attrs
 
     def validate_permissions(self, instance=None):
         """Проверка прав доступа для обновления."""
@@ -287,6 +305,12 @@ class RecipeCreateUpdateSerializer(serializers.ModelSerializer):
             )
 
         return instance
+
+    def to_representation(self, instance):
+        """Return representation using the read serializer."""
+        instance.is_favorited = False
+        instance.is_in_shopping_cart = False
+        return RecipeSerializer(instance, context=self.context).data
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -400,3 +424,26 @@ class AvatarSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["avatar"]
+
+    def update(self, instance, validated_data):
+        """Handle avatar update."""
+        if not validated_data.get("avatar"):
+            raise ValidationError({
+                "field_name": ["Отсутствует обязательное поле 'avatar'"],
+            })
+        instance.avatar = validated_data.get("avatar", instance.avatar)
+        instance.save()
+        return instance
+
+    def delete_avatar(self):
+        """Handle avatar deletion."""
+        user = self.instance
+        if user.avatar:
+            user.avatar.delete(save=True)
+        return user
+
+    def to_representation(self, instance):
+        """Return custom response format."""
+        if instance.avatar:
+            return {"avatar": instance.avatar.url}
+        return {"avatar": None}

@@ -1,0 +1,10 @@
+[
+{
+  "model": "users.subscribtion",
+  "pk": 5,
+  "fields": {
+    "user": 2,
+    "author": 5
+  }
+}
+]

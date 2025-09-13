@@ -1,0 +1,18 @@
+[
+{
+  "model": "recipe.favorite",
+  "pk": 1,
+  "fields": {
+    "user": 5,
+    "recipe": 12
+  }
+},
+{
+  "model": "recipe.favorite",
+  "pk": 3,
+  "fields": {
+    "user": 4,
+    "recipe": 13
+  }
+}
+]

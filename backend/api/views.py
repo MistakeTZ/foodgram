@@ -26,6 +26,7 @@ from rest_framework.viewsets import (
 
 from api.filters import IngredientFilter, RecipeFilter
 from api.paginator import PagePagination
+from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (
     AvatarSerializer,
     CartSerializer,
@@ -206,7 +207,7 @@ class RecipeViewSet(ModelViewSet):
     def get_permissions(self):
         """Определение прав доступа в зависимости от действия."""
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsAuthenticated()]
+            return [IsAuthenticated(), IsAuthorOrReadOnly()]
         return super().get_permissions()
 
     def get_serializer_class(self):
@@ -215,47 +216,12 @@ class RecipeViewSet(ModelViewSet):
             return RecipeCreateUpdateSerializer
         return RecipeSerializer
 
-    def create(self, request, *args, **kwargs):
-        """Создание рецепта с возвратом read-serializer данных."""
-        write_serializer = self.get_serializer(data=request.data)
-        write_serializer.is_valid(raise_exception=True)
-
-        recipe = write_serializer.save()
-
-        read_serializer = RecipeSerializer(
-            recipe,
-            context={"request": request},
-        )
-
-        headers = self.get_success_headers(write_serializer.data)
-        return Response(
-            read_serializer.data,
-            status=HTTPStatus.CREATED,
-            headers=headers,
-        )
-
-    def update(self, request, *args, **kwargs):
-        """Обновление рецепта с возвратом read-serializer данных."""
-        partial = kwargs.pop("partial", False)
-        instance = self.get_object()
-
-        write_serializer = self.get_serializer(
-            instance,
-            data=request.data,
-            partial=partial,
-        )
-        write_serializer.is_valid(raise_exception=True)
-
-        recipe = write_serializer.save()
-
-        read_serializer = RecipeSerializer(
-            recipe,
-            context={"request": request},
-        )
-
-        return Response(read_serializer.data)
-
-    @action(detail=True, methods=["post", "delete"], url_path="favorite")
+    @action(
+        detail=True,
+        methods=["post", "delete"],
+        url_path="favorite",
+        permission_classes=[IsAuthenticated],
+    )
     def favorite(self, request, pk=None):
         """Добавить/удалить рецепт из избранного."""
         return handle_user_recipe_relation(
@@ -277,7 +243,6 @@ class UserViewSet(ModelViewSet):
 
     def get_serializer_class(self):
         """Возвращает сериализатор в зависимости от действия."""
-
         if self.action == "create":
             return UserWriteSerializer
         if self.action in ["subscribe", "subscriptions"]:
@@ -356,31 +321,6 @@ class UserViewSet(ModelViewSet):
         )
         return paginator.get_paginated_response(serializer.data)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(
-            data=request.data, context={"request": request},
-        )
-        if serializer.is_valid():
-            user = serializer.save()
-            return Response(
-                {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                },
-                status=HTTPStatus.CREATED,
-            )
-        else:
-            field_errors = [
-                str(field[0]) for field in serializer.errors.values()
-            ]
-            return Response(
-                {"field_name": field_errors},
-                status=HTTPStatus.BAD_REQUEST,
-            )
-
     @action(
         detail=False,
         methods=["put", "delete"],
@@ -391,28 +331,18 @@ class UserViewSet(ModelViewSet):
         user = request.user
 
         if request.method == "PUT":
-            serializer = AvatarSerializer(
+            serializer = self.get_serializer(
                 user,
                 data=request.data,
                 partial=True,
             )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(
-                    {"avatar": user.avatar.url},
-                    status=HTTPStatus.OK,
-                )
-            field_errors = [
-                str(field[0]) for field in serializer.errors.values()
-            ]
-            return Response(
-                {"field_name": field_errors},
-                status=HTTPStatus.BAD_REQUEST,
-            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=HTTPStatus.OK)
 
         elif request.method == "DELETE":
-            if user.avatar:
-                user.avatar.delete(save=True)
+            serializer = self.get_serializer(user)
+            serializer.delete_avatar()
             return Response(status=HTTPStatus.NO_CONTENT)
 
 

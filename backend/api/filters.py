@@ -39,7 +39,6 @@ class RecipeFilter(django_filters.FilterSet):
 
     def filter_tags(self, queryset, name, value):
         """Кастомная фильтрация тегов с поддержкой множественных значений."""
-
         if not value:
             return queryset
 
@@ -54,7 +53,6 @@ class RecipeFilter(django_filters.FilterSet):
 
     def filter_favorited(self, queryset, name, value):
         """Фильтрация избранных рецептов."""
-
         user = self.request.user
         if value == "1" and user.is_authenticated:
             return queryset.filter(
@@ -66,7 +64,6 @@ class RecipeFilter(django_filters.FilterSet):
 
     def filter_shopping_cart(self, queryset, name, value):
         """Фильтрация рецептов в корзине."""
-
         user = self.request.user
         if value == "1" and user.is_authenticated:
             return queryset.filter(

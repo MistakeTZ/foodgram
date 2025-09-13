@@ -32,4 +32,4 @@ API проекта: http://localhost:8000/api/
 
 ## Сайт
 IP адрес: http://51.250.24.70/
-Админка: http://51.250.24.70/admin/ (username: admin, пароль: pass)
+Админка: http://51.250.24.70/admin/ (email: admin@gmail.com, пароль: pass)
